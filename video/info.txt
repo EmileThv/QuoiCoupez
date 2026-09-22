@@ -1,0 +1,26 @@
+VIDEO/ - Traitement vidéo bas niveau
+=======================================
+
+Ce répertoire contient le code qui manipule réellement les fichiers
+vidéo : lecture des frames, export final, génération de miniatures. Il
+s'appuie sur des libs comme OpenCV, PyAV et FFmpeg.
+
+Fichiers attendus :
+
+- decoder.py
+    Lecture des frames d'une vidéo (via OpenCV ou PyAV). Conçu pour
+    tourner dans un QThread dédié afin de ne pas bloquer l'interface
+    pendant la lecture/décodage.
+
+- exporter.py
+    Export de la vidéo montée (avec effets appliqués) vers un fichier
+    final, via FFmpeg. Doit exposer une progression (pourcentage/étape)
+    consommable par workers/export_worker.py.
+
+- thumbnail.py
+    Génération des miniatures et des images-clés (keyframes) utilisées
+    dans la bibliothèque de médias et sur la timeline.
+
+Règle générale : ce code ne doit pas dépendre de Qt directement (pas de
+QWidget ici) ; il expose des fonctions/classes appelées par les workers
+(workers/) qui, eux, font le lien avec l'UI via signaux/slots.

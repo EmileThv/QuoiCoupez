@@ -1,0 +1,12 @@
+RESOURCES/ICONS/ - Icônes de l'interface
+============================================
+
+Ce répertoire contient les fichiers image (PNG, SVG...) utilisés comme
+icônes dans l'interface graphique : boutons de la barre de contrôle
+(play, pause, stop...), boutons d'import/export, icônes des effets dans
+effects_panel.py, icônes de la bibliothèque de médias, etc.
+
+Règle générale : privilégier un format vectoriel (SVG) quand c'est
+possible pour un rendu net à toutes les résolutions, et garder une
+convention de nommage cohérente (ex : icon_play.svg, icon_pause.svg)
+pour faciliter leur référencement dans le code Qt (ui/).

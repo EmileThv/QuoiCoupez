@@ -1,0 +1,23 @@
+TESTS/ - Tests unitaires
+============================
+
+Ce répertoire contient les tests unitaires du projet, réalisés avec un
+framework comme pytest. Les tests ciblent en priorité le code de core/
+et effects/, car il est indépendant de Qt et donc facilement testable
+sans interface graphique.
+
+Fichiers attendus :
+
+- test_project.py
+    Tests unitaires pour core/project.py, core/clip.py, core/track.py
+    et core/timeline_model.py (ajout/suppression de clips, calcul de
+    durée, cohérence des pistes, etc.).
+
+- test_effects.py
+    Tests unitaires pour effects/ (vérifier que chaque effet applique
+    correctement sa transformation à une frame/donnée audio de test,
+    sans dépendre de l'UI).
+
+Règle générale : ne pas tester le code de ui/ ni de workers/ ici (ils
+dépendent de Qt et de threads, plus difficiles à tester unitairement) ;
+se concentrer sur la logique métier pure.

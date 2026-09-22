@@ -1,0 +1,24 @@
+WORKERS/ - Threads Qt (ne pas bloquer l'UI)
+==============================================
+
+Ce répertoire contient les classes QThread qui exécutent les tâches
+longues ou temps réel en arrière-plan, pour que l'interface graphique
+(ui/) reste fluide et réactive pendant ce temps.
+
+Fichiers attendus :
+
+- playback_worker.py
+    QThread dédié à la lecture temps réel de la vidéo montée (décodage
+    frame par frame via video/decoder.py, application des effets via
+    effects/, puis émission d'un signal avec la frame prête pour
+    l'affichage dans ui/preview_widget.py).
+
+- export_worker.py
+    QThread dédié à l'export final de la vidéo (appel à
+    video/exporter.py), avec émission régulière d'un signal de
+    progression consommé par l'UI (barre de progression).
+
+Règle générale : ces classes font le pont entre le traitement lourd
+(video/, effects/) et l'UI (ui/) via des signaux Qt (Signal/Slot) ; elles
+ne doivent pas contenir de logique métier complexe, seulement
+l'orchestration et la communication thread-safe avec l'UI.

@@ -1,0 +1,41 @@
+UI/ - Interface graphique (PySide6)
+====================================
+
+Ce répertoire contient tout ce qui concerne l'affichage et l'interaction
+avec l'utilisateur. C'est la couche "vue" de l'application : elle ne doit
+contenir aucune logique métier lourde (montage, traitement vidéo, gestion
+des effets...), qui doit rester dans core/, video/ et effects/.
+
+Fichiers attendus :
+
+- main_window.py
+    Classe QMainWindow principale. Assemble les différents widgets
+    (aperçu, timeline, contrôles, panneau d'effets, bibliothèque de
+    médias) dans un layout général et gère les menus / barres d'outils.
+
+- preview_widget.py
+    Widget d'aperçu vidéo (QVideoWidget ou QLabel + QImage) qui affiche
+    l'image courante de la vidéo pendant la lecture ou au survol de la
+    timeline.
+
+- timeline_widget.py
+    Widget custom (dessiné via paintEvent) représentant les pistes, les
+    clips positionnés sur ces pistes, le curseur de lecture et les
+    interactions (déplacement, découpe, sélection de clips).
+
+- controls_widget.py
+    Barre de contrôle de lecture : boutons play/pause/stop, slider de
+    progression, affichage du temps courant / total.
+
+- effects_panel.py
+    Panneau listant les effets disponibles (vidéo et audio) et
+    permettant de configurer leurs paramètres une fois appliqués à un
+    clip.
+
+- media_library.py
+    Liste/galerie des médias importés dans le projet, avec miniatures,
+    permettant de les glisser-déposer sur la timeline.
+
+Règle générale : les widgets de ce dossier communiquent avec la logique
+métier (core/) via des signaux/slots Qt, jamais en manipulant directement
+les fichiers vidéo ou les traitements OpenCV/FFmpeg.

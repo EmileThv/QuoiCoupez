@@ -1,0 +1,14 @@
+ASSETS/ - Médias de test / démonstration
+============================================
+
+Ce répertoire contient des fichiers vidéo (et éventuellement audio ou
+image) d'exemple, utilisés pour tester manuellement l'application
+pendant le développement et pour réaliser la vidéo de démonstration
+demandée dans le cadre du module.
+
+Règle générale :
+- Ne pas y mettre de ressources d'interface (icônes, styles) : celles-ci
+  vont dans resources/.
+- Attention à la taille des fichiers vidéo versionnés dans Git ; utiliser
+  des extraits courts et légers autant que possible, et vérifier le
+  .gitignore si certains fichiers ne doivent pas être commités.

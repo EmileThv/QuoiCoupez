@@ -1,0 +1,33 @@
+CORE/ - Logique métier (indépendante de Qt)
+=============================================
+
+Ce répertoire contient les classes qui représentent l'état et les
+règles métier du logiciel de montage, indépendamment de toute librairie
+graphique (pas d'import PySide6 ici). Cela permet de tester ce code
+facilement (voir tests/) et de changer d'UI sans tout réécrire.
+
+Fichiers attendus :
+
+- project.py
+    Classe Project : représente l'état global d'un projet de montage
+    (liste des pistes, durée totale, médias importés, sauvegarde /
+    chargement du projet...).
+
+- clip.py
+    Classe Clip : représente un extrait d'un média source, avec ses
+    points d'entrée/sortie (in/out points), sa position et sa durée sur
+    la piste, ainsi que les effets qui lui sont appliqués.
+
+- track.py
+    Classe Track : représente une piste (vidéo ou audio) de la
+    timeline, contenant une liste ordonnée de clips.
+
+- timeline_model.py
+    Modèle de données de la timeline, séparé du widget graphique
+    (ui/timeline_widget.py). Il centralise les opérations sur les
+    pistes/clips (ajout, suppression, déplacement, découpe) et notifie
+    l'UI des changements.
+
+Règle générale : ce code ne doit dépendre que de Python standard (et
+éventuellement de petites libs utilitaires), pas de Qt, ni de
+FFmpeg/OpenCV directement (ça, c'est le rôle de video/).

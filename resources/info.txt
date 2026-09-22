@@ -1,0 +1,21 @@
+RESOURCES/ - Icônes, style et fichiers statiques
+====================================================
+
+Ce répertoire contient les ressources statiques utilisées par
+l'interface graphique : icônes, feuilles de style, etc. Il ne contient
+aucun code Python métier.
+
+Contenu attendu :
+
+- icons/
+    Icônes utilisées dans les boutons, menus et barres d'outils de
+    l'application (play, pause, export, import, effets...).
+
+- style.qss
+    Feuille de style Qt (QSS, syntaxe proche du CSS) définissant
+    l'apparence générale de l'application (couleurs, polices,
+    espacements des widgets).
+
+Règle générale : tout nouvel élément visuel statique (icône, image
+d'interface, style) doit être ajouté ici plutôt que dans assets/, qui
+lui est réservé aux médias de démonstration/test.

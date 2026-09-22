@@ -1,0 +1,29 @@
+EFFECTS/ - Effets vidéo et audio
+===================================
+
+Ce répertoire regroupe tous les effets applicables aux clips, vidéo
+comme audio, ainsi que l'interface commune qu'ils doivent respecter
+pour être utilisables de manière générique par le reste de
+l'application (core/, ui/effects_panel.py).
+
+Fichiers attendus :
+
+- base_effect.py
+    Classe abstraite Effect définissant l'interface commune à tous les
+    effets, typiquement une méthode apply(frame, params) qui prend une
+    frame (image) et un dictionnaire de paramètres, et retourne la
+    frame modifiée.
+
+- video_effects.py
+    Effets visuels concrets : flou, incrustation de texte, incrustation
+    d'image/logo, modifications de couleurs, etc. Peut s'appuyer sur
+    OpenCV et/ou PyFx.
+
+- audio_effects.py
+    Wrapper autour de la librairie Audiomentations pour appliquer des
+    effets audio (bruit, pitch, reverb, etc.) sur les pistes audio des
+    clips.
+
+Règle générale : chaque nouvel effet doit hériter de base_effect.Effect
+afin de rester compatible avec le système de pistes d'effets et le
+panneau de paramètres dans l'UI.
