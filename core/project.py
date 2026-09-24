@@ -57,7 +57,7 @@ class Project:
     def set_total_duration(self, duration):
         if duration is None:
             raise ValueError("project.set_total_duration: duration cannot be None")
-        if not isinstance(duration, int, float):
+        if not isinstance(duration, (int, float)):
             raise TypeError("project.set_total_duration: duration must be of type int")
         self.total_duration = duration
 

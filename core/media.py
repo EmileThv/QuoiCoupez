@@ -75,11 +75,11 @@ class VideoMedia(Media):
         if fps is None:
             raise ValueError("video_media.__init__: fps cannot be None")
         if not isinstance(duration, (int, float)):
-            raise TypeError("video_media.__init__: duration must be a number or None")
+            raise TypeError("video_media.__init__: duration must be a number")
         if not isinstance(resolution, tuple):
-            raise TypeError("video_media.__init__: resolution must be a tuple or None")
+            raise TypeError("video_media.__init__: resolution must be a tuple")
         if not isinstance(fps, (int, float)):
-            raise TypeError("video_media.__init__: fps must be a number or None")
+            raise TypeError("video_media.__init__: fps must be a number")
         
         super().__init__(file_path, name, thumbnail_path)
         self.duration = duration
@@ -109,7 +109,7 @@ class VideoMedia(Media):
         if duration is None:
             raise ValueError("video_media.set_duration: duration cannot be None")
         if not isinstance(duration, (int, float)):
-            raise TypeError("video_media.set_duration: duration must be a number or None")
+            raise TypeError("video_media.set_duration: duration must be a number")
         self.duration = duration
 
     # Sets the resolution of the video
@@ -117,7 +117,7 @@ class VideoMedia(Media):
         if resolution is None:
             raise ValueError("video_media.set_resolution: resolution cannot be None")
         if not isinstance(resolution, tuple):
-            raise TypeError("video_media.set_resolution: resolution must be a tuple or None")
+            raise TypeError("video_media.set_resolution: resolution must be a tuple")
         self.resolution = resolution
 
     # Sets the frame rate of the video
@@ -125,7 +125,7 @@ class VideoMedia(Media):
         if fps is None:
             raise ValueError("video_media.set_fps: fps cannot be None")
         if not isinstance(fps, (int, float)):
-            raise TypeError("video_media.set_fps: fps must be a number or None")
+            raise TypeError("video_media.set_fps: fps must be a number")
         self.fps = fps
 
 
@@ -135,7 +135,7 @@ class AudioMedia(Media):
         if duration is None:
             raise ValueError("audio_media.__init__: duration cannot be None")
         if not isinstance(duration, (int, float)):
-            raise TypeError("audio_media.__init__: duration must be a number or None")
+            raise TypeError("audio_media.__init__: duration must be a number")
         
         super().__init__(file_path, name, thumbnail_path)
         self.duration = duration
@@ -149,7 +149,7 @@ class AudioMedia(Media):
         if duration is None:
             raise ValueError("audio_media.set_duration: duration cannot be None")
         if not isinstance(duration, (int, float)):
-            raise TypeError("audio_media.set_duration: duration must be a number or None")
+            raise TypeError("audio_media.set_duration: duration must be a number")
         self.duration = duration
 
 
@@ -159,7 +159,7 @@ class ImageMedia(Media):
         if resolution is None:
             raise ValueError("image_media.__init__: resolution cannot be None")
         if not isinstance(resolution, tuple):
-            raise TypeError("image_media.__init__: resolution must be a tuple or None")
+            raise TypeError("image_media.__init__: resolution must be a tuple")
         
         super().__init__(file_path, name, thumbnail_path)
         self.resolution = resolution
@@ -173,5 +173,5 @@ class ImageMedia(Media):
         if resolution is None:
             raise ValueError("image_media.set_resolution: resolution cannot be None")
         if not isinstance(resolution, tuple):
-            raise TypeError("image_media.set_resolution: resolution must be a tuple or None")
+            raise TypeError("image_media.set_resolution: resolution must be a tuple")
         self.resolution = resolution

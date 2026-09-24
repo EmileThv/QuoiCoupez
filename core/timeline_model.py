@@ -1,11 +1,8 @@
-# TimelineModel: centralizes operations on tracks/clips for a project,
-# separate from the UI widget.
-
 import core.project
 import core.track
 import core.clip
 
-
+# TimelineModel: centralizes operations on tracks/clips for a project, separate from the UI widget.
 class TimelineModel:
     def __init__(self, project):
         if project is None:

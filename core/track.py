@@ -25,7 +25,7 @@ class Track:
         if clip is None:
             raise ValueError("track.add_clip: clip cannot be None")
         if not isinstance(clip, core.clip.Clip):
-            raise ValueError("track.add_clip: clip must be of type core.clip.Clip")
+            raise TypeError("track.add_clip: clip must be of type core.clip.Clip")
         self.clips.append(clip)
 
     # Removes a clip from the track
@@ -33,5 +33,5 @@ class Track:
         if clip is None:
             raise ValueError("track.remove_clip: clip cannot be None")
         if not isinstance(clip, core.clip.Clip):
-            raise ValueError("track.remove_clip: clip must be of type core.clip.Clip")
+            raise TypeError("track.remove_clip: clip must be of type core.clip.Clip")
         self.clips.remove(clip)
