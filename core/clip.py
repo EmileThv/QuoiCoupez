@@ -1,6 +1,4 @@
-# Clip class: an excerpt of a source media, with in/out points, 
-# position on the track, and applied effects.
-
+# Clip class: an excerpt of a source media, with in/out points, position on the track, and applied effects.
 class Clip:
     def __init__(self, source, in_point=0, out_point=0, position=0):
         self.source = source

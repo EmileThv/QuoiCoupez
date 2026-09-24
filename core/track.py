@@ -1,8 +1,6 @@
-# Classe Track : représente une piste (vidéo ou audio) de la
-# timeline, contenant une liste ordonnée de clips.
-
 import core.clip
 
+# Track class : represents a track (audio or video) of the timeline, containing an ordered list of clips. 
 class Track:
     def __init__(self):
         self.clips = []
