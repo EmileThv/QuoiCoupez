@@ -50,7 +50,7 @@ class Project:
 
     # Sets the total duration
     def set_total_duration(self, duration):
-        if not isinstance(duration, int):
+        if not isinstance(duration, int, float):
             raise TypeError("project.set_total_duration: duration must be of type int")
         self.total_duration = duration
 
