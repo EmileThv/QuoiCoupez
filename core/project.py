@@ -1,8 +1,7 @@
-# Classe Project : représente l'état global d'un projet de montage
-# (liste des pistes, durée totale, médias importés, sauvegarde /
-# chargement du projet...).
 import core.track
 
+# Project class : represents a global state of a project of video montage, containing a list of tracks, total duration, 
+# imported media and save path
 class Project:
     def __init__(self, name):
         self.name = name
@@ -15,6 +14,7 @@ class Project:
 
     # Returns the name of the project
     def get_name(self):
+        
         return self.name
 
     # Returns the list of tracks
@@ -72,18 +72,18 @@ class Project:
     # Adds a track to the project
     def add_track(self, track):
         if track is None:
-            raise TypeError("project.add_track: track must be of type core.track.Track")
-        elif not isinstance(track, core.track.Track):
             raise ValueError("project.add_track: track cannot be None")
+        elif not isinstance(track, core.track.Track):
+            raise TypeError("project.add_track: track must be of type core.track.Track")
         else:
             self.tracks.append(track)
 
     # Removes a track from the project
     def remove_track(self, track):
         if track is None:
-            raise TypeError("project.remove_track: track must be of type core.track.Track")
-        elif not isinstance(track, core.track.Track):
             raise ValueError("project.remove_track: track cannot be None")
+        elif not isinstance(track, core.track.Track):
+            raise TypeError("project.remove_track: track must be of type core.track.Track")
         else:
             self.tracks.remove(track)
 
