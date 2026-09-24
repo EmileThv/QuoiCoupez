@@ -1,3 +1,5 @@
+import core.media
+
 # Clip class: an excerpt of a source media, with in/out points, position on the track, and applied effects.
 class Clip:
     def __init__(self, source, in_point=0, out_point=0, position=0):
@@ -6,6 +8,7 @@ class Clip:
         self.out_point = out_point
         self.position = position
         self.effects = []
+
 
     # Getters
 
@@ -27,7 +30,7 @@ class Clip:
 
     # Returns the list of effects applied to the clip
     def get_effects(self):
-        return self.effects
+        return self.effects.copy()
 
     # Returns the duration of the clip
     def get_duration(self):
@@ -40,11 +43,15 @@ class Clip:
     def set_source(self, source):
         if source is None:
             raise ValueError("clip.set_source: source cannot be None")
+        elif not isinstance(source, core.media.Media):
+            raise TypeError("clip.set_source: source must be of type core.media.Media")
         else:
             self.source = source
 
     # Sets the in point of the clip
     def set_in_point(self, in_point):
+        if in_point is None:
+            raise ValueError("clip.set_in_point: in_point cannot be None")
         if not isinstance(in_point, (int, float)):
             raise TypeError("clip.set_in_point: in_point must be a number")
         else:
@@ -52,6 +59,8 @@ class Clip:
 
     # Sets the out point of the clip
     def set_out_point(self, out_point):
+        if out_point is None:
+            raise ValueError("clip.set_out_point: out_point cannot be None")
         if not isinstance(out_point, (int, float)):
             raise TypeError("clip.set_out_point: out_point must be a number")
         else:
@@ -59,6 +68,8 @@ class Clip:
 
     # Sets the position of the clip on the track
     def set_position(self, position):
+        if position is None:
+            raise ValueError("clip.set_position: position cannot be None")
         if not isinstance(position, (int, float)):
             raise TypeError("clip.set_position: position must be a number")
         else:

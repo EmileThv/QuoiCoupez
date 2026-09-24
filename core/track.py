@@ -11,6 +11,8 @@ class Track:
 
     # Sets the list of clips
     def set_clips(self, clips):
+        if clips is None:
+            raise ValueError("track.set_clips: clips cannot be None")
         if not isinstance(clips, list):
             raise TypeError("track.set_clips: clips must be of type list")
         self.clips = clips
