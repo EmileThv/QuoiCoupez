@@ -1,0 +1,45 @@
+# TimelineModel: centralizes operations on tracks/clips for a project,
+# separate from the UI widget.
+
+import core.project
+import core.track
+import core.clip
+
+
+class TimelineModel:
+    def __init__(self, project):
+        self.project = project
+
+    # Getters
+
+    # Returns the project managed by this model
+    def get_project(self):
+        return self.project
+
+
+    # Setters
+
+    # Sets the project managed by this model
+    def set_project(self, project):
+        if not isinstance(project, core.project.Project):
+            raise TypeError("timeline_model.set_project: project must be of type core.project.Project")
+        self.project = project
+
+
+    # Methods
+
+    # Adds a clip to a track of the project
+    def add_clip(self, track, clip):
+        if not isinstance(track, core.track.Track):
+            raise TypeError("timeline_model.add_clip: track must be of type core.track.Track")
+        if track not in self.project.get_tracks():
+            raise ValueError("timeline_model.add_clip: track is not part of the project")
+        track.add_clip(clip)
+
+    # Removes a clip from a track of the project
+    def remove_clip(self, track, clip):
+        if not isinstance(track, core.track.Track):
+            raise TypeError("timeline_model.remove_clip: track must be of type core.track.Track")
+        if track not in self.project.get_tracks():
+            raise ValueError("timeline_model.remove_clip: track is not part of the project")
+        track.remove_clip(clip)
