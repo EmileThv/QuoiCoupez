@@ -1,6 +1,37 @@
 # Classe Track : représente une piste (vidéo ou audio) de la
 # timeline, contenant une liste ordonnée de clips.
 
+import core.clip
+
 class Track:
     def __init__(self):
-        self_clips = []
+        self.clips = []
+
+    # Returns the list of clips
+    def get_clips(self):
+        return self.clips
+
+    # Sets the list of clips
+    def set_clips(self, clips):
+        if not isinstance(clips, list):
+            raise TypeError("track.set_clips: clips must be of type list")
+        self.clips = clips
+
+
+    # Methods
+
+    # Adds a clip to the track
+    def add_clip(self, clip):
+        if clip is None:
+            raise ValueError("track.add_clip: clip cannot be None")
+        if not isinstance(clip, core.clip.Clip):
+            raise ValueError("track.add_clip: clip must be of type core.clip.Clip")
+        self.clips.append(clip)
+
+    # Removes a clip from the track
+    def remove_clip(self, clip):
+        if clip is None:
+            raise ValueError("track.remove_clip: clip cannot be None")
+        if not isinstance(clip, core.clip.Clip):
+            raise ValueError("track.remove_clip: clip must be of type core.clip.Clip")
+        self.clips.remove(clip)

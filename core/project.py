@@ -19,7 +19,7 @@ class Project:
 
     # Returns the list of tracks
     def get_tracks(self):
-        return self.tracks
+        return self.tracks.copy()
 
     # Returns the total duration
     def get_total_duration(self):
@@ -27,7 +27,7 @@ class Project:
 
     # Returns the list of media
     def get_media(self):
-        return self.media
+        return self.media.copy()
 
     # Returns the save path
     def get_save_path(self):
@@ -38,40 +38,51 @@ class Project:
 
     # Sets the name of the project
     def set_name(self, name):
+        if not isinstance(name, str):
+            raise TypeError("project.set_name: name must be of type str")
         self.name = name
 
     # Sets the list of tracks
     def set_tracks(self, tracks):
+        if not isinstance(tracks, list):
+            raise TypeError("project.set_tracks: tracks must be of type list")
         self.tracks = tracks
 
     # Sets the total duration
     def set_total_duration(self, duration):
+        if not isinstance(duration, int):
+            raise TypeError("project.set_total_duration: duration must be of type int")
         self.total_duration = duration
 
     # Sets the list of media
     def set_media(self, media):
+        if not isinstance(media, list):
+            raise TypeError("project.set_media: media must be of type list")
         self.media = media
 
     # Sets the save path
     def set_save_path(self, path):
+        if not isinstance(path, str):
+            raise TypeError("project.set_save_path: path must be of type str")
         self.save_path = path
 
 
+    # Methods
 
     # Adds a track to the project
     def add_track(self, track):
-        if not isinstance(track, core.track.Track):
+        if track is None:
             raise TypeError("project.add_track: track must be of type core.track.Track")
-        elif track is None:
+        elif not isinstance(track, core.track.Track):
             raise ValueError("project.add_track: track cannot be None")
         else:
             self.tracks.append(track)
 
     # Removes a track from the project
     def remove_track(self, track):
-        if not isinstance(track, core.track.Track):
+        if track is None:
             raise TypeError("project.remove_track: track must be of type core.track.Track")
-        elif track is None:
+        elif not isinstance(track, core.track.Track):
             raise ValueError("project.remove_track: track cannot be None")
         else:
             self.tracks.remove(track)
@@ -82,3 +93,10 @@ class Project:
             raise ValueError("project.add_media: media cannot be None")
         else:
             self.media.append(media)
+
+    # Removes a media from the project
+    def remove_media(self, media):
+        if media is None:
+            raise ValueError("project.remove_media: media cannot be None")
+        else:
+            self.media.remove(media)
