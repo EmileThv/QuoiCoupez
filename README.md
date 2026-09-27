@@ -24,7 +24,7 @@ Projet développé par **Matthieu**, **Bastian**, **Élie** et **Émile**.
 - **OpenCV** (`opencv-python`) — lecture des frames, miniatures, traitement d'image
 - **FFmpeg** (via `ffmpeg-python`) — décodage/encodage et export vidéo
 - **Audiomentations** — effets audio
-- **PyFx** *(optionnel)* — effets visuels additionnels
+- **PyFx** — effets visuels additionnels
 
 ## Installation
 
