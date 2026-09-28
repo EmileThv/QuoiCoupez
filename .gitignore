@@ -1,2 +1,6 @@
 __pycache__/
+/ui/__pycache__
+
 *.pyc
+
+/rapports
