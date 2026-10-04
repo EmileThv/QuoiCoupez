@@ -22,8 +22,10 @@ def generate_thumbnail(file_path, output_path, frame_index=0):
     if not success:
         raise ValueError("generate_thumbnail: could not read frame")
 
-    written = cv2.imwrite(output_path, frame)
-    if not written:
-        raise ValueError("generate_thumbnail: could not write thumbnail")
+    success, encoded_image = cv2.imencode(".jpg", frame)
+    if not success:
+        raise ValueError("thumbnail.generate_thumbnail: could not encode frame")
+    with open(output_path, "wb") as f:
+        f.write(encoded_image.tobytes())
 
     return output_path
