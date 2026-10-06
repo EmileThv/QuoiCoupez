@@ -1,7 +1,5 @@
-# Manual test script of week 2: runs PlaybackWorker for a few seconds
-# and checks the main (UI) thread is never blocked meanwhile.
-#
-#   python -m tests.Elie_Tests_week2 [video_path]
+# Manual test script of week 2
+
 
 import sys
 
