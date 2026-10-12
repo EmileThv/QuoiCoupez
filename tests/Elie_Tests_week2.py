@@ -18,6 +18,7 @@ def main():
     worker = PlaybackWorker(video_path)
     received = []
     worker.frame_ready.connect(received.append)
+    worker.position_changed.connect(lambda index: print(f"playback_worker: frame {index}"))
 
     # Ticks on the main thread: if the worker blocked it, these would not print
     ticks = []
@@ -33,6 +34,7 @@ def main():
     QTimer.singleShot(DURATION_MS, finish)
     print(f"Starting playback of '{video_path}' for {DURATION_MS / 1000}s...")
     worker.start()
+    worker.play()
     app.exec()
 
     print(f"\nFrames received by the main thread: {len(received)}")
