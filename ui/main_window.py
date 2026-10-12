@@ -11,6 +11,7 @@ from core.track import Track
 from ui.controls_widget import ControlsWidget
 from ui.preview_widget import PreviewWidget
 from ui.timeline_widget import TimelineWidget
+from workers.playback_worker import PlaybackWorker
 
 TEST_VIDEO_PATH = os.path.join("assets", "video.mp4")
 
@@ -38,7 +39,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(timeline_scroll, 1)
         self.setCentralWidget(central)
 
-        self._show_first_frame(TEST_VIDEO_PATH)
+        self.playback_worker = None
+        self._start_playback_worker(TEST_VIDEO_PATH)
 
     # Provisoire : projet de démonstration (2 pistes, clips statiques) en attendant l'import de médias.
     def _build_demo_project(self):
@@ -52,14 +54,27 @@ class MainWindow(QMainWindow):
                 model.add_clip(track, Clip(media, in_point, out_point, position))
         return project
 
-    def _show_first_frame(self, path):
-        # Provisoire : à remplacer par le décodeur itérable (video/decoder.py) une fois finalisé.
+    # Crée le worker de lecture et le connecte à l'aperçu et aux contrôles
+    def _start_playback_worker(self, path):
         if not os.path.isfile(path):
+            self.controls.setEnabled(False)
             return
-        import cv2
 
-        capture = cv2.VideoCapture(path)
-        ok, frame = capture.read()
-        capture.release()
-        if ok:
-            self.preview.set_frame(frame)
+        worker = PlaybackWorker(path, self)
+        worker.frame_ready.connect(self.preview.set_image)
+        worker.position_changed.connect(self.controls.set_position)
+        self.controls.set_maximum(worker.get_frame_count() - 1)
+
+        self.controls.play_clicked.connect(worker.play)
+        self.controls.pause_clicked.connect(worker.pause)
+        self.controls.stop_clicked.connect(worker.stop_playback)
+        self.controls.seek_requested.connect(worker.seek)
+
+        self.playback_worker = worker
+        worker.start()
+
+    # Arrête proprement le thread de lecture avant de fermer la fenêtre
+    def closeEvent(self, event):
+        if self.playback_worker is not None:
+            self.playback_worker.stop()
+        super().closeEvent(event)
