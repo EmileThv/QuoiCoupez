@@ -2,6 +2,8 @@ from PySide6.QtCore import QRectF, Qt, Slot
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QWidget
 
+from core.clip import Clip
+
 CLIP_COLORS = ["#4f8ef7", "#f7a14f", "#6cc070", "#c76cf0", "#f06c8a"]
 
 
@@ -18,6 +20,7 @@ class TimelineWidget(QWidget):
         super().__init__(parent)
         self.timeline_model = timeline_model
         self.pixels_per_second = 20
+        self.setAcceptDrops(True)
         self._update_size()
 
     # Redessine la timeline (slot prévu pour les futurs signaux du modèle)
@@ -125,3 +128,48 @@ class TimelineWidget(QWidget):
     def _clip_label(clip):
         source = clip.get_source()
         return source.get_name() if source is not None else "Clip"
+
+    MEDIA_MIME = "application/x-quoicoupez-media"
+
+    def _x_to_time(self, x):
+        return max((x - self.HEADER_WIDTH) / self.pixels_per_second, 0)
+
+    def _y_to_track_index(self, y):
+        tracks = self.timeline_model.get_project().get_tracks()
+        for index in range(len(tracks)):
+            top = self._track_top(index)
+            if top <= y < top + self.TRACK_HEIGHT:
+                return index
+        return None
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasFormat(self.MEDIA_MIME):
+            event.acceptProposedAction()
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasFormat(self.MEDIA_MIME):
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        mime = event.mimeData()
+        if not mime.hasFormat(self.MEDIA_MIME):
+            return
+
+        file_path = bytes(mime.data(self.MEDIA_MIME)).decode("utf-8")
+        point = event.position().toPoint()
+
+        project = self.timeline_model.get_project()
+        media = next((m for m in project.get_media() if m.get_file_path() == file_path), None)
+        if media is None:
+            return
+
+        track_index = self._y_to_track_index(point.y())
+        if track_index is None:
+            return
+        track = project.get_tracks()[track_index]
+
+        clip = Clip(media, 0, media.get_duration(), self._x_to_time(point.x()))
+        self.timeline_model.add_clip(track, clip)
+
+        self.refresh()
+        event.acceptProposedAction()
