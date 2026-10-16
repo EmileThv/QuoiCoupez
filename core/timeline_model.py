@@ -32,6 +32,7 @@ class TimelineModel:
             raise TypeError("timeline_model.__init__: project must be of type core.project.Project")
         self.project = project
         self.changed = ModelSignal()
+        self._update_total_duration()
 
     def get_project(self):
         return self.project
@@ -42,7 +43,7 @@ class TimelineModel:
         if not isinstance(project, core.project.Project):
             raise TypeError("timeline_model.set_project: project must be of type core.project.Project")
         self.project = project
-        self.changed.emit()
+        self._notify()
 
     def add_clip(self, track, clip):
         self._check_track_and_clip("add_clip", track, clip)
@@ -50,7 +51,7 @@ class TimelineModel:
             raise ValueError("timeline_model.add_clip: clip is already on this track")
 
         track.add_clip(clip)
-        self.changed.emit()
+        self._notify()
 
     def remove_clip(self, track, clip):
         self._check_track_and_clip("remove_clip", track, clip)
@@ -58,7 +59,7 @@ class TimelineModel:
             raise ValueError("timeline_model.remove_clip: clip is not on this track")
 
         track.remove_clip(clip)
-        self.changed.emit()
+        self._notify()
 
     def move_clip(self, track, clip, position, target_track=None):
         self._check_track_and_clip("move_clip", track, clip)
@@ -81,6 +82,34 @@ class TimelineModel:
         if target_track is not track:
             track.remove_clip(clip)
             target_track.add_clip(clip)
+        self._notify()
+
+    def trim_clip(self, track, clip, in_point, out_point):
+        self._check_track_and_clip("trim_clip", track, clip)
+        if clip not in track.get_clips():
+            raise ValueError("timeline_model.trim_clip: clip is not on this track")
+
+        old_in_point, old_out_point = clip.get_in_point(), clip.get_out_point()
+        clip.trim(in_point, out_point)
+
+        # Trimming the start shifts the clip so its end stays in place on the timeline
+        position = clip.get_position() + (in_point - old_in_point)
+        if position < 0:
+            clip.trim(old_in_point, old_out_point)
+            raise ValueError("timeline_model.trim_clip: the clip would start before 0")
+
+        clip.set_position(position)
+        self._notify()
+
+    def _update_total_duration(self):
+        end = 0
+        for track in self.project.get_tracks():
+            for clip in track.get_clips():
+                end = max(end, clip.get_position() + clip.get_duration())
+        self.project.set_total_duration(end)
+
+    def _notify(self):
+        self._update_total_duration()
         self.changed.emit()
 
     def _check_track_and_clip(self, method_name, track, clip):

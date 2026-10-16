@@ -50,21 +50,19 @@ class Clip:
 
     # Sets the in point of the clip
     def set_in_point(self, in_point):
-        if in_point is None:
-            raise ValueError("clip.set_in_point: in_point cannot be None")
-        if not isinstance(in_point, (int, float)):
-            raise TypeError("clip.set_in_point: in_point must be a number")
-        else:
-            self.in_point = in_point
+        self._check_points("set_in_point", in_point, self.out_point)
+        self.in_point = in_point
 
     # Sets the out point of the clip
     def set_out_point(self, out_point):
-        if out_point is None:
-            raise ValueError("clip.set_out_point: out_point cannot be None")
-        if not isinstance(out_point, (int, float)):
-            raise TypeError("clip.set_out_point: out_point must be a number")
-        else:
-            self.out_point = out_point
+        self._check_points("set_out_point", self.in_point, out_point)
+        self.out_point = out_point
+
+    # Sets both points at once, so the clip is never invalid in between
+    def trim(self, in_point, out_point):
+        self._check_points("trim", in_point, out_point)
+        self.in_point = in_point
+        self.out_point = out_point
 
     # Sets the position of the clip on the track
     def set_position(self, position):
@@ -98,3 +96,17 @@ class Clip:
             raise ValueError("clip.remove_effect: effect cannot be None")
         else:
             self.effects.remove(effect)
+
+    def _check_points(self, method_name, in_point, out_point):
+        for name, value in (("in_point", in_point), ("out_point", out_point)):
+            if value is None:
+                raise ValueError(f"clip.{method_name}: {name} cannot be None")
+            if not isinstance(value, (int, float)):
+                raise TypeError(f"clip.{method_name}: {name} must be a number")
+        if in_point < 0:
+            raise ValueError(f"clip.{method_name}: in_point cannot be negative")
+        if out_point <= in_point:
+            raise ValueError(f"clip.{method_name}: out_point must be greater than in_point")
+        # ImageMedia has no duration, so an image clip can be as long as wanted
+        if hasattr(self.source, "get_duration") and out_point > self.source.get_duration():
+            raise ValueError(f"clip.{method_name}: out_point cannot exceed the source duration")
