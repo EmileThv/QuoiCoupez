@@ -1,21 +1,38 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QListWidget, QListWidgetItem
-from PySide6.QtGui import QIcon
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QIcon, QDrag
+from PySide6.QtCore import QMimeData, Qt, QSize
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.media import Media
 
+class _MediaListWidget(QListWidget):
+    def startDrag(self, supportedActions):
+        print("startDrag appelé")
+        item = self.currentItem()
+        if item is None:
+            return
+        path = item.data(Qt.UserRole).get_file_path()
+
+        mime = QMimeData()
+        mime.setData("application/x-quoicoupez-media", path.encode("utf-8"))
+
+        drag = QDrag(self)
+        drag.setMimeData(mime)
+        drag.exec(Qt.CopyAction)
+
 # Gallery of imported media.
 class MediaLibraryWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.list_widget = QListWidget(self)
+        self.list_widget = _MediaListWidget(self)
         self.list_widget.setViewMode(QListWidget.IconMode)
         self.list_widget.setIconSize(QSize(120, 68))        # Taille de l'icône modifiable si besoin
         self.list_widget.setResizeMode(QListWidget.Adjust)
+        self.list_widget.setMovement(QListWidget.Static)
+        self.list_widget.setDragEnabled(True)
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.list_widget)
