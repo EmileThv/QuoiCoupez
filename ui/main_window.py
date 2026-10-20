@@ -1,7 +1,7 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from PySide6.QtWidgets import QMainWindow, QScrollArea, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QScrollArea, QVBoxLayout, QWidget
 
 from core.clip import Clip
 from core.media import VideoMedia
@@ -9,6 +9,7 @@ from core.project import Project
 from core.timeline_model import TimelineModel
 from core.track import Track
 from ui.controls_widget import ControlsWidget
+from ui.effects_panel import EffectsPanel
 from ui.preview_widget import PreviewWidget
 from ui.timeline_widget import TimelineWidget
 from workers.playback_worker import PlaybackWorker
@@ -32,11 +33,19 @@ class MainWindow(QMainWindow):
         timeline_scroll.setWidgetResizable(True)
         timeline_scroll.setMinimumHeight(200)
 
+        self.effects_panel = EffectsPanel(self)
+        self.effects_panel.setFixedWidth(280)
+        self.timeline.clip_selected.connect(self.effects_panel.set_clip)
+
+        left = QVBoxLayout()
+        left.addWidget(self.preview, 3)
+        left.addWidget(self.controls)
+        left.addWidget(timeline_scroll, 1)
+
         central = QWidget(self)
-        layout = QVBoxLayout(central)
-        layout.addWidget(self.preview, 3)
-        layout.addWidget(self.controls)
-        layout.addWidget(timeline_scroll, 1)
+        layout = QHBoxLayout(central)
+        layout.addLayout(left, 1)
+        layout.addWidget(self.effects_panel)
         self.setCentralWidget(central)
 
         self.playback_worker = None
