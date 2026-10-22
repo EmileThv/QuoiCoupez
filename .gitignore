@@ -6,3 +6,4 @@ __pycache__/
 
 /rapports
 venv/
+assets/test_*
