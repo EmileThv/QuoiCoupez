@@ -5,3 +5,5 @@ __pycache__/
 *.pyc
 
 /rapports
+venv/
+assets/test_*

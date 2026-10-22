@@ -1,6 +1,4 @@
-# Manual test script of week 1: checks that Project, Track, Media
-# and Clip fit together correctly. Not a pytest suite, just run it
-# directly and read the printed output.
+# Manual test script of week 1
 
 
 from core.project import Project
