@@ -1,12 +1,20 @@
-from PySide6.QtCore import QRectF, Qt, Slot
+from PySide6.QtCore import QRectF, Qt, Signal, Slot
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QWidget
+
+from core.clip import Clip
 
 CLIP_COLORS = ["#4f8ef7", "#f7a14f", "#6cc070", "#c76cf0", "#f06c8a"]
 
 
 class TimelineWidget(QWidget):
-    """Timeline statique : règle de temps, pistes et clips dessinés via paintEvent."""
+    """Timeline : règle de temps, pistes et clips dessinés via paintEvent.
+
+    Souris : clic gauche sélectionne un clip, glisser le déplace dans le temps sur sa piste.
+    """
+
+    clip_selected = Signal(object)  # Clip sélectionné (None si la sélection est effacée)
+    clip_moved = Signal(object)  # Clip dont la position vient de changer
 
     RULER_HEIGHT = 28
     HEADER_WIDTH = 80
@@ -18,6 +26,11 @@ class TimelineWidget(QWidget):
         super().__init__(parent)
         self.timeline_model = timeline_model
         self.pixels_per_second = 20
+        self.setAcceptDrops(True)
+        self.selected_clip = None
+        self._drag_clip = None
+        self._drag_offset = 0  # secondes entre le début du clip et le point saisi
+        self.setMouseTracking(True)
         self._update_size()
 
     # Redessine la timeline (slot prévu pour les futurs signaux du modèle)
@@ -56,6 +69,52 @@ class TimelineWidget(QWidget):
 
     def _track_top(self, index):
         return self.RULER_HEIGHT + self.TRACK_SPACING + index * (self.TRACK_HEIGHT + self.TRACK_SPACING)
+
+    def _clip_rect(self, track_index, clip):
+        x = self._time_to_x(clip.get_position())
+        width = max(clip.get_duration() * self.pixels_per_second, 1)
+        return QRectF(x, self._track_top(track_index) + 3, width, self.TRACK_HEIGHT - 6)
+
+    # Retourne le clip sous le point donné (celui dessiné au-dessus en cas de chevauchement), ou None
+    def _clip_at(self, point):
+        tracks = self.timeline_model.get_project().get_tracks()
+        for index, track in enumerate(tracks):
+            for clip in reversed(track.get_clips()):
+                if self._clip_rect(index, clip).contains(point):
+                    return clip
+        return None
+
+    def select_clip(self, clip):
+        if clip is not self.selected_clip:
+            self.selected_clip = clip
+            self.clip_selected.emit(clip)
+            self.update()
+
+    def mousePressEvent(self, event):
+        if event.button() != Qt.LeftButton:
+            return
+        clip = self._clip_at(event.position())
+        self.select_clip(clip)
+        if clip is not None:
+            self._drag_clip = clip
+            self._drag_offset = (event.position().x() - self._time_to_x(clip.get_position())) / self.pixels_per_second
+            self.setCursor(Qt.ClosedHandCursor)
+
+    def mouseMoveEvent(self, event):
+        if self._drag_clip is None:
+            self.setCursor(Qt.OpenHandCursor if self._clip_at(event.position()) else Qt.ArrowCursor)
+            return
+        time = (event.position().x() - self.HEADER_WIDTH) / self.pixels_per_second - self._drag_offset
+        new_position = max(0, round(time, 2))
+        if new_position != self._drag_clip.get_position():
+            self._drag_clip.set_position(new_position)
+            self.clip_moved.emit(self._drag_clip)
+            self.refresh()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton and self._drag_clip is not None:
+            self._drag_clip = None
+            self.setCursor(Qt.OpenHandCursor if self._clip_at(event.position()) else Qt.ArrowCursor)
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -104,11 +163,12 @@ class TimelineWidget(QWidget):
 
             # Clips
             for clip in track.get_clips():
-                x = self._time_to_x(clip.get_position())
-                width = max(clip.get_duration() * self.pixels_per_second, 1)
-                rect = QRectF(x, top + 3, width, self.TRACK_HEIGHT - 6)
+                rect = self._clip_rect(index, clip)
                 painter.setBrush(QColor(CLIP_COLORS[color_index % len(CLIP_COLORS)]))
-                painter.setPen(QPen(QColor("#ffffff"), 1))
+                if clip is self.selected_clip:
+                    painter.setPen(QPen(QColor("#ffd400"), 3))
+                else:
+                    painter.setPen(QPen(QColor("#ffffff"), 1))
                 painter.drawRoundedRect(rect, 4, 4)
                 painter.setPen(QColor("#ffffff"))
                 painter.setFont(self._font(8))
@@ -125,3 +185,48 @@ class TimelineWidget(QWidget):
     def _clip_label(clip):
         source = clip.get_source()
         return source.get_name() if source is not None else "Clip"
+
+    MEDIA_MIME = "application/x-quoicoupez-media"
+
+    def _x_to_time(self, x):
+        return max((x - self.HEADER_WIDTH) / self.pixels_per_second, 0)
+
+    def _y_to_track_index(self, y):
+        tracks = self.timeline_model.get_project().get_tracks()
+        for index in range(len(tracks)):
+            top = self._track_top(index)
+            if top <= y < top + self.TRACK_HEIGHT:
+                return index
+        return None
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasFormat(self.MEDIA_MIME):
+            event.acceptProposedAction()
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasFormat(self.MEDIA_MIME):
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        mime = event.mimeData()
+        if not mime.hasFormat(self.MEDIA_MIME):
+            return
+
+        file_path = bytes(mime.data(self.MEDIA_MIME)).decode("utf-8")
+        point = event.position().toPoint()
+
+        project = self.timeline_model.get_project()
+        media = next((m for m in project.get_media() if m.get_file_path() == file_path), None)
+        if media is None:
+            return
+
+        track_index = self._y_to_track_index(point.y())
+        if track_index is None:
+            return
+        track = project.get_tracks()[track_index]
+
+        clip = Clip(media, 0, media.get_duration(), self._x_to_time(point.x()))
+        self.timeline_model.add_clip(track, clip)
+
+        self.refresh()
+        event.acceptProposedAction()
