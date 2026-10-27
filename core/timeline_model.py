@@ -3,7 +3,7 @@ import core.track
 import core.clip
 
 
-# Minimal Qt-like signal, so core/ stays free of PySide6
+# A simple signal that works like Qt's, because core/ must not depend on PySide6.
 class ModelSignal:
     def __init__(self):
         self.callbacks = []
@@ -23,7 +23,7 @@ class ModelSignal:
             callback()
 
 
-# Operations on the project's tracks/clips; emits `changed` after each one so the UI can redraw
+# TimelineModel: changes the clips of the project and warns the UI after each change.
 class TimelineModel:
     def __init__(self, project):
         if project is None:
@@ -89,11 +89,13 @@ class TimelineModel:
         if clip not in track.get_clips():
             raise ValueError("timeline_model.trim_clip: clip is not on this track")
 
-        old_in_point, old_out_point = clip.get_in_point(), clip.get_out_point()
+        old_in_point = clip.get_in_point()
+        old_out_point = clip.get_out_point()
         clip.trim(in_point, out_point)
 
-        # Trimming the start shifts the clip so its end stays in place on the timeline
-        position = clip.get_position() + (in_point - old_in_point)
+        # When the start is trimmed, the clip moves so that its end stays at the same place.
+        shift = in_point - old_in_point
+        position = clip.get_position() + shift
         if position < 0:
             clip.trim(old_in_point, old_out_point)
             raise ValueError("timeline_model.trim_clip: the clip would start before 0")
@@ -101,11 +103,13 @@ class TimelineModel:
         clip.set_position(position)
         self._notify()
 
+    # The total duration is the end of the clip that finishes last.
     def _update_total_duration(self):
         end = 0
         for track in self.project.get_tracks():
             for clip in track.get_clips():
-                end = max(end, clip.get_position() + clip.get_duration())
+                clip_end = clip.get_position() + clip.get_duration()
+                end = max(end, clip_end)
         self.project.set_total_duration(end)
 
     def _notify(self):

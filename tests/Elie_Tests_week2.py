@@ -12,18 +12,31 @@ DURATION_MS = 2000
 
 
 def main():
-    video_path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_VIDEO
+    # A video path can be given on the command line, otherwise the test video is used.
+    if len(sys.argv) > 1:
+        video_path = sys.argv[1]
+    else:
+        video_path = DEFAULT_VIDEO
     app = QCoreApplication(sys.argv)
 
     worker = PlaybackWorker(video_path)
     received = []
     worker.frame_ready.connect(received.append)
-    worker.position_changed.connect(lambda index: print(f"playback_worker: frame {index}"))
 
-    # Ticks on the main thread: if the worker blocked it, these would not print
+    def print_frame(index):
+        print(f"playback_worker: frame {index}")
+
+    worker.position_changed.connect(print_frame)
+
+    # This timer runs on the main thread: if the worker blocked it, no tick would be printed.
     ticks = []
+
+    def on_tick():
+        ticks.append(1)
+        print(f"main thread alive (tick {len(ticks)})")
+
     ui_timer = QTimer()
-    ui_timer.timeout.connect(lambda: (ticks.append(1), print(f"main thread alive (tick {len(ticks)})")))
+    ui_timer.timeout.connect(on_tick)
     ui_timer.start(250)
 
     def finish():
@@ -41,7 +54,10 @@ def main():
     if received:
         print(f"Frame size: {received[0].width()}x{received[0].height()}")
     print(f"Main thread ticks during playback: {len(ticks)}")
-    print("Week 2 objective OK: worker runs without blocking the UI." if received and ticks else "Week 2 objective FAILED")
+    if received and ticks:
+        print("Week 2 objective OK: worker runs without blocking the UI.")
+    else:
+        print("Week 2 objective FAILED")
 
 
 if __name__ == "__main__":

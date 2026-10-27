@@ -97,16 +97,22 @@ class Clip:
         else:
             self.effects.remove(effect)
 
+    # Checks that the in and out points are valid before changing them.
     def _check_points(self, method_name, in_point, out_point):
-        for name, value in (("in_point", in_point), ("out_point", out_point)):
-            if value is None:
-                raise ValueError(f"clip.{method_name}: {name} cannot be None")
-            if not isinstance(value, (int, float)):
-                raise TypeError(f"clip.{method_name}: {name} must be a number")
+        self._check_number(method_name, "in_point", in_point)
+        self._check_number(method_name, "out_point", out_point)
         if in_point < 0:
             raise ValueError(f"clip.{method_name}: in_point cannot be negative")
         if out_point <= in_point:
             raise ValueError(f"clip.{method_name}: out_point must be greater than in_point")
-        # ImageMedia has no duration, so an image clip can be as long as wanted
-        if hasattr(self.source, "get_duration") and out_point > self.source.get_duration():
-            raise ValueError(f"clip.{method_name}: out_point cannot exceed the source duration")
+
+        # An image has no duration, so an image clip can be as long as we want.
+        if hasattr(self.source, "get_duration"):
+            if out_point > self.source.get_duration():
+                raise ValueError(f"clip.{method_name}: out_point cannot exceed the source duration")
+
+    def _check_number(self, method_name, name, value):
+        if value is None:
+            raise ValueError(f"clip.{method_name}: {name} cannot be None")
+        if not isinstance(value, (int, float)):
+            raise TypeError(f"clip.{method_name}: {name} must be a number")
