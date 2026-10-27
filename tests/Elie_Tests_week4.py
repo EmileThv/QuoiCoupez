@@ -1,4 +1,4 @@
-# Week 4 manual test, run with: python -m tests.Elie_Tests_week4
+# Manual test script of week 4
 
 from core.project import Project
 from core.track import Track
@@ -8,8 +8,8 @@ from core.timeline_model import TimelineModel
 
 
 def print_state(project, clip):
-    print(f"    clip: in={clip.get_in_point()}s out={clip.get_out_point()}s "
-          f"position={clip.get_position()}s duration={clip.get_duration()}s")
+    print(f"    clip: in={clip.get_in_point()}s out={clip.get_out_point()}s")
+    print(f"    clip: position={clip.get_position()}s duration={clip.get_duration()}s")
     print(f"    project total duration: {project.get_total_duration()}s")
 
 
@@ -21,7 +21,11 @@ def main():
 
     model = TimelineModel(project)
     signals = []
-    model.changed.connect(lambda: signals.append(1))
+
+    def on_changed():
+        signals.append(1)
+
+    model.changed.connect(on_changed)
 
     clip = Clip(media, 0, 10, 5)
     print("Add a 10s clip at 5s")
@@ -37,16 +41,27 @@ def main():
     print_state(project, clip)
 
     print("Invalid trims are refused and change nothing")
-    for in_point, out_point, reason in ((4, 3, "out before in"), (2, 25, "past the media end"), (-1, 6, "negative in")):
+    # Each line: in point, out point, and why the trim is invalid.
+    invalid_trims = [
+        (4, 3, "out before in"),
+        (2, 25, "past the media end"),
+        (-1, 6, "negative in"),
+    ]
+    for in_point, out_point, reason in invalid_trims:
         try:
             model.trim_clip(track, clip, in_point, out_point)
         except ValueError as error:
             print(f"    {reason}: refused ({error})")
     print_state(project, clip)
 
-    ok = clip.get_duration() == 4 and clip.get_position() == 7 and project.get_total_duration() == 11 and len(signals) == 3
+    clip_ok = clip.get_duration() == 4 and clip.get_position() == 7
+    duration_ok = project.get_total_duration() == 11
+    signals_ok = len(signals) == 3
     print(f"\nSignals received: {len(signals)} / 3 expected")
-    print("Week 4 objective OK: trimming updates the clip and the total duration." if ok else "Week 4 objective FAILED")
+    if clip_ok and duration_ok and signals_ok:
+        print("Week 4 objective OK: trimming updates the clip and the total duration.")
+    else:
+        print("Week 4 objective FAILED")
 
 
 if __name__ == "__main__":

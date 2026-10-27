@@ -1,6 +1,9 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import time
+
+from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import QMainWindow, QScrollArea, QVBoxLayout, QWidget
 
 from core.clip import Clip
@@ -9,6 +12,7 @@ from core.project import Project
 from core.timeline_model import TimelineModel
 from core.track import Track
 from ui.controls_widget import ControlsWidget
+from ui.export_dialog import ExportDialog
 from ui.preview_widget import PreviewWidget
 from ui.timeline_widget import TimelineWidget
 from workers.playback_worker import PlaybackWorker
@@ -41,6 +45,22 @@ class MainWindow(QMainWindow):
 
         self.playback_worker = None
         self._start_playback_worker(TEST_VIDEO_PATH)
+
+        export_action = QAction("Exporter…", self)
+        export_action.setShortcut(QKeySequence("Ctrl+E"))
+        export_action.triggered.connect(self.open_export_dialog)
+        self.menuBar().addMenu("Fichier").addAction(export_action)
+
+    def open_export_dialog(self):
+        ExportDialog(self._make_export, self).exec()
+
+    # Temporary: pretends to export without writing any file, until video/exporter.py exists.
+    def _make_export(self, output_path):
+        def simulated_export(on_progress):
+            for percent in range(101):
+                time.sleep(0.03)
+                on_progress(percent)
+        return simulated_export
 
     # Provisoire : projet de démonstration (2 pistes, clips statiques) en attendant l'import de médias.
     def _build_demo_project(self):
