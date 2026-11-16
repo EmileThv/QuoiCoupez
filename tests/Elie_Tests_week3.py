@@ -1,4 +1,4 @@
-# Manual test script of week 3hg    
+# Manual test script of week 3
 
 from core.project import Project
 from core.track import Track
@@ -7,15 +7,19 @@ from core.clip import Clip
 from core.timeline_model import TimelineModel
 
 
+# Prints the clips of each track, for example "Track 1: [A @ 0s, B @ 6s]".
 def print_tracks(project, names):
     for index, track in enumerate(project.get_tracks()):
-        clips = ", ".join(f"{names[clip]} @ {clip.get_position()}s" for clip in track.get_clips())
-        print(f"    Track {index + 1}: [{clips}]")
+        descriptions = []
+        for clip in track.get_clips():
+            descriptions.append(f"{names[clip]} @ {clip.get_position()}s")
+        print(f"    Track {index + 1}: [{', '.join(descriptions)}]")
 
 
 def main():
     project = Project("Demo project")
-    track_1, track_2 = Track(), Track()
+    track_1 = Track()
+    track_2 = Track()
     project.add_track(track_1)
     project.add_track(track_2)
 
@@ -26,9 +30,14 @@ def main():
 
     model = TimelineModel(project)
 
-    # Stands in for timeline_widget.refresh()
+    # This function plays the role of timeline_widget.refresh().
     signals = []
-    model.changed.connect(lambda: (signals.append(1), print(f"    -> changed signal received ({len(signals)})")))
+
+    def on_changed():
+        signals.append(1)
+        print(f"    -> changed signal received ({len(signals)})")
+
+    model.changed.connect(on_changed)
 
     print("Add clips A and B on track 1")
     model.add_clip(track_1, clip_a)
@@ -56,7 +65,10 @@ def main():
 
     expected = 5
     print(f"\nSignals received: {len(signals)} / {expected} expected")
-    print("Week 3 objective OK: the model notifies every change." if len(signals) == expected else "Week 3 objective FAILED")
+    if len(signals) == expected:
+        print("Week 3 objective OK: the model notifies every change.")
+    else:
+        print("Week 3 objective FAILED")
 
 
 if __name__ == "__main__":
