@@ -1,9 +1,9 @@
 from PySide6.QtCore import QRectF, Qt, Signal, Slot
-from PySide6.QtGui import QColor, QFont, QImage, QPainter, QPen
+from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QWidget
 
 from core.clip import Clip
-from video.thumbnail import generate_keyframes
+from workers.keyframe_worker import KeyframeWorker
 
 CLIP_COLORS = ["#4f8ef7", "#f7a14f", "#6cc070", "#c76cf0", "#f06c8a"]
 
@@ -38,7 +38,8 @@ class TimelineWidget(QWidget):
         self._drag_offset = 0  # secondes entre le début du clip et le point saisi
         self._trim_clip = None
         self._trim_edge = None  # "left" ou "right"
-        self._keyframes = {}  # chemin du média -> liste de QImage (vide si illisible)
+        self._keyframes = {}  # chemin du média -> liste de QImage (vide si illisible ou pas encore prête)
+        self._keyframe_workers = []  # threads d'extraction en cours
         self.setMouseTracking(True)
         self.timeline_model.changed.connect(self.refresh)
         self._update_size()
@@ -253,19 +254,28 @@ class TimelineWidget(QWidget):
                 )
                 color_index += 1
 
-    # Vignettes de la source, extraites une seule fois par média (liste vide si la source est illisible)
+    # Vignettes de la source, extraites une seule fois par média dans un thread séparé.
+    # Retourne une liste vide tant qu'elles ne sont pas prêtes (ou si la source est illisible).
     def _get_keyframes(self, media):
         path = media.get_file_path()
         if path not in self._keyframes:
-            try:
-                frames = generate_keyframes(path, self.KEYFRAME_COUNT, self.TRACK_HEIGHT - 6)
-                self._keyframes[path] = [
-                    QImage(f.data, f.shape[1], f.shape[0], f.strides[0], QImage.Format_BGR888).copy()
-                    for f in frames
-                ]
-            except (OSError, ValueError, TypeError):
-                self._keyframes[path] = []
+            self._keyframes[path] = []
+            worker = KeyframeWorker(path, self.KEYFRAME_COUNT, self.TRACK_HEIGHT - 6, self)
+            worker.keyframes_ready.connect(self._on_keyframes_ready)
+            worker.finished.connect(lambda: self._keyframe_workers.remove(worker))
+            self._keyframe_workers.append(worker)
+            worker.start()
         return self._keyframes[path]
+
+    @Slot(str, list)
+    def _on_keyframes_ready(self, path, images):
+        self._keyframes[path] = images
+        self.update()
+
+    # Attend la fin des extractions en cours (à appeler avant de fermer l'application)
+    def stop_workers(self):
+        for worker in list(self._keyframe_workers):
+            worker.wait()
 
     # Remplit le clip de vignettes : chacune montre l'image de la source au temps correspondant
     def _draw_thumbnails(self, painter, clip, rect):

@@ -157,4 +157,5 @@ class MainWindow(QMainWindow):
     # Arrête proprement le thread de lecture avant de fermer la fenêtre
     def closeEvent(self, event):
         self._stop_playback_worker()
+        self.timeline.stop_workers()
         super().closeEvent(event)
