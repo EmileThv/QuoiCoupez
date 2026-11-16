@@ -306,7 +306,11 @@ class TimelineWidget(QWidget):
     @staticmethod
     def _clip_label(clip):
         source = clip.get_source()
-        return source.get_name() if source is not None else "Clip"
+        label = source.get_name() if source is not None else "Clip"
+        nb_effects = len(clip.get_effects())
+        if nb_effects > 0:
+            label += f"  [fx {nb_effects}]"
+        return label
 
     MEDIA_MIME = "application/x-quoicoupez-media"
 

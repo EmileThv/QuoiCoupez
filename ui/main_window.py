@@ -15,6 +15,7 @@ from core.project import Project
 from core.timeline_model import TimelineModel
 from core.track import Track
 from ui.controls_widget import ControlsWidget
+from ui.effects_panel import EffectsPanel
 from ui.export_dialog import ExportDialog
 from ui.media_library import MediaLibraryWidget
 from ui.preview_widget import PreviewWidget
@@ -44,10 +45,15 @@ class MainWindow(QMainWindow):
         timeline_scroll.setWidget(self.timeline)
         timeline_scroll.setWidgetResizable(True)
         timeline_scroll.setMinimumHeight(200)
+        self.effects_panel = EffectsPanel()
+        self.effects_panel.setMinimumWidth(280)
+        self.timeline.clip_selected.connect(self._on_clip_selected)
+        self.effects_panel.effects_changed.connect(self._on_effects_changed)
 
         top = QHBoxLayout()
         top.addWidget(self.library, 1)
         top.addWidget(self.preview, 3)
+        top.addWidget(self.effects_panel, 1)
 
         central = QWidget(self)
         layout = QVBoxLayout(central)
@@ -57,6 +63,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
 
         self.playback_worker = None
+        self.playback_path = None
         self.controls.setEnabled(False)
 
         file_menu = self.menuBar().addMenu("Fichier")
@@ -119,9 +126,33 @@ class MainWindow(QMainWindow):
         self.library.add_media(media)
         return media
 
-    # Double-clic sur un média de la bibliothèque : l'affiche dans l'aperçu
+    # Double-clic sur un média de la bibliothèque : l'affiche dans l'aperçu, sans effets
     def _preview_item(self, item):
+        self.timeline.select_clip(None)
         self._start_playback_worker(item.data(Qt.UserRole).get_file_path())
+
+    # Clip sélectionné sur la timeline : l'aperçu lit sa source à partir de son point d'entrée,
+    # avec ses effets, et le panneau d'effets affiche ses effets.
+    def _on_clip_selected(self, clip):
+        self.effects_panel.set_clip(clip)
+        if clip is None:
+            if self.playback_worker is not None:
+                self.playback_worker.set_effects([])
+            return
+
+        path = clip.get_source().get_file_path()
+        if self.playback_worker is None or self.playback_path != path:
+            self._start_playback_worker(path)
+        if self.playback_worker is None:
+            return
+        self.playback_worker.set_effects(clip.get_effects())
+        self.playback_worker.seek(int(clip.get_in_point() * self.playback_worker.get_fps()))
+
+    # Effets modifiés dans le panneau : l'aperçu est mis à jour immédiatement
+    def _on_effects_changed(self, clip):
+        if self.playback_worker is not None and clip is self.timeline.selected_clip:
+            self.playback_worker.set_effects(clip.get_effects())
+        self.timeline.refresh()
 
     # Crée (ou remplace) le worker de lecture et le connecte à l'aperçu et aux contrôles
     def _start_playback_worker(self, path):
@@ -131,7 +162,9 @@ class MainWindow(QMainWindow):
             return
 
         worker = PlaybackWorker(path, self)
+        self.playback_path = path
         worker.frame_ready.connect(self.preview.set_image)
+        worker.effect_failed.connect(lambda message: self.statusBar().showMessage(f"Effet ignoré : {message}", 5000))
         worker.position_changed.connect(self.controls.set_position)
         self.controls.set_maximum(max(worker.get_frame_count() - 1, 0))
         self.controls.set_position(0)
@@ -153,6 +186,7 @@ class MainWindow(QMainWindow):
             signal.disconnect()
         self.playback_worker.stop()
         self.playback_worker = None
+        self.playback_path = None
 
     # Arrête proprement le thread de lecture avant de fermer la fenêtre
     def closeEvent(self, event):
