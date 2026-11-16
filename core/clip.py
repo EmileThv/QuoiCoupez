@@ -2,11 +2,11 @@ import core.media
 
 # Clip class: an excerpt of a source media, with in/out points, position on the track, and applied effects.
 class Clip:
-    def __init__(self, source, in_point=0, out_point=0, position=0):
-        self.source = source
-        self.in_point = in_point
-        self.out_point = out_point
-        self.position = position
+    # The values go through the setters, so an invalid clip cannot be created.
+    def __init__(self, source, in_point, out_point, position=0):
+        self.set_source(source)
+        self.trim(in_point, out_point)
+        self.set_position(position)
         self.effects = []
 
 
