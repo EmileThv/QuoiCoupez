@@ -36,7 +36,12 @@ class ColorCorrectionEffect(Effect):
     def apply(self, frame, params=None):
         self.check_frame(frame)
         params = self.resolve_params(params)
-        return cv2.convertScaleAbs(frame, alpha=params["contrast"], beta=params["brightness"])
+        # cv2.convertScaleAbs is not used: it takes the absolute value, so a strong darkening
+        # (100 - 255 = -155) gave a bright pixel (155) instead of black.
+        # The 256 possible results are computed once, then cv2.LUT replaces each pixel value (fast).
+        table = np.arange(256, dtype=np.float32) * params["contrast"] + params["brightness"]
+        table = np.clip(np.round(table), 0, 255).astype(np.uint8)
+        return cv2.LUT(frame, table)
 
 
 # TextOverlayEffect: writes a text on the frame.

@@ -1,5 +1,7 @@
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QSlider
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal
+
+from ui.icons import load_icon
 
 
 # ControlsWidget : play/pause/stop buttons and a progress slider.
@@ -12,9 +14,14 @@ class ControlsWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.play_button = QPushButton("Play", self)
-        self.pause_button = QPushButton("Pause", self)
-        self.stop_button = QPushButton("Stop", self)
+        self.play_button = QPushButton(load_icon("play"), "", self)
+        self.pause_button = QPushButton(load_icon("pause"), "", self)
+        self.stop_button = QPushButton(load_icon("stop"), "", self)
+        for button, tip in ((self.play_button, "Lecture (Espace)"), (self.pause_button, "Pause (Espace)"),
+                            (self.stop_button, "Stop : retour au début")):
+            button.setToolTip(tip)
+            button.setIconSize(QSize(20, 20))
+            button.setFixedWidth(44)
 
         self.slider = QSlider(Qt.Horizontal, self)
         self.slider.setRange(0, 0)

@@ -36,6 +36,14 @@ Fichiers attendus :
     Liste/galerie des médias importés dans le projet, avec miniatures,
     permettant de les glisser-déposer sur la timeline.
 
+- export_dialog.py
+    Boîte de dialogue d'export : choix du fichier de sortie, barre de
+    progression et annulation (via workers/export_worker.py).
+
+- icons.py
+    Chargement des icônes SVG de resources/icons/ et de la feuille de
+    style resources/style.qss.
+
 Règle générale : les widgets de ce dossier communiquent avec la logique
 métier (core/) via des signaux/slots Qt, jamais en manipulant directement
 les fichiers vidéo ou les traitements OpenCV/FFmpeg.

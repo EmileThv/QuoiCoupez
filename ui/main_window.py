@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import tempfile
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtGui import QAction, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QFileDialog, QHBoxLayout, QMainWindow, QMessageBox, QScrollArea, QVBoxLayout, QWidget,
 )
@@ -16,6 +16,7 @@ from core.track import Track
 from ui.controls_widget import ControlsWidget
 from ui.effects_panel import EffectsPanel
 from ui.export_dialog import ExportDialog
+from ui.icons import load_icon
 from ui.media_library import MediaLibraryWidget
 from ui.preview_widget import PreviewWidget
 from ui.timeline_widget import TimelineWidget
@@ -67,14 +68,26 @@ class MainWindow(QMainWindow):
         self.controls.setEnabled(False)
 
         file_menu = self.menuBar().addMenu("Fichier")
-        import_action = QAction("Importer un média…", self)
+        import_action = QAction(load_icon("import"), "Importer un média…", self)
         import_action.setShortcut(QKeySequence("Ctrl+I"))
         import_action.triggered.connect(self.import_media)
         file_menu.addAction(import_action)
-        export_action = QAction("Exporter…", self)
+        export_action = QAction(load_icon("export"), "Exporter…", self)
         export_action.setShortcut(QKeySequence("Ctrl+E"))
         export_action.triggered.connect(self.open_export_dialog)
         file_menu.addAction(export_action)
+
+        # Espace : lecture / pause (un champ de texte qui a le focus garde la touche pour lui)
+        play_pause = QShortcut(QKeySequence(Qt.Key_Space), self)
+        play_pause.activated.connect(self._toggle_playback)
+
+    def _toggle_playback(self):
+        if self.playback_worker is None:
+            return
+        if self.playback_worker.is_playing():
+            self.playback_worker.pause()
+        else:
+            self.playback_worker.play()
 
     def open_export_dialog(self):
         ExportDialog(self._make_export, self).exec()

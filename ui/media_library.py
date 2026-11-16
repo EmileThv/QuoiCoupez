@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QListWidget, QListWidgetItem
+from PySide6.QtWidgets import QLabel, QWidget, QVBoxLayout, QListWidget, QListWidgetItem
 from PySide6.QtGui import QIcon, QDrag
 from PySide6.QtCore import QMimeData, Qt, QSize
 import sys
@@ -9,7 +9,6 @@ from core.media import Media
 
 class _MediaListWidget(QListWidget):
     def startDrag(self, supportedActions):
-        print("startDrag appelé")
         item = self.currentItem()
         if item is None:
             return
@@ -34,8 +33,17 @@ class MediaLibraryWidget(QWidget):
         self.list_widget.setMovement(QListWidget.Static)
         self.list_widget.setDragEnabled(True)
 
+        title = QLabel("Bibliothèque")
+        title.setObjectName("panelTitle")
+        self.hint = QLabel("Fichier → Importer (Ctrl+I), puis glissez un média sur la timeline. "
+                           "Double-clic : aperçu.")
+        self.hint.setWordWrap(True)
+        self.hint.setStyleSheet("color: #9a9a9a; font-size: 9pt;")
+
         layout = QVBoxLayout(self)
+        layout.addWidget(title)
         layout.addWidget(self.list_widget)
+        layout.addWidget(self.hint)
         self.setLayout(layout)
 
     # Adds a media to the library and displays it with its thumbnail
