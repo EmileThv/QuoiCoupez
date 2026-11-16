@@ -3,6 +3,7 @@ from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QWidget
 
 from core.clip import Clip
+from workers.keyframe_worker import KeyframeWorker
 
 CLIP_COLORS = ["#4f8ef7", "#f7a14f", "#6cc070", "#c76cf0", "#f06c8a"]
 
@@ -10,17 +11,22 @@ CLIP_COLORS = ["#4f8ef7", "#f7a14f", "#6cc070", "#c76cf0", "#f06c8a"]
 class TimelineWidget(QWidget):
     """Timeline : règle de temps, pistes et clips dessinés via paintEvent.
 
-    Souris : clic gauche sélectionne un clip, glisser le déplace dans le temps sur sa piste.
+    Souris : clic gauche sélectionne un clip, glisser le déplace dans le temps sur sa piste,
+    glisser l'un de ses bords le raccourcit (trim). Chaque clip affiche des vignettes de sa source.
     """
 
     clip_selected = Signal(object)  # Clip sélectionné (None si la sélection est effacée)
     clip_moved = Signal(object)  # Clip dont la position vient de changer
+    clip_trimmed = Signal(object)  # Clip dont les points in/out viennent de changer
 
     RULER_HEIGHT = 28
     HEADER_WIDTH = 80
     TRACK_HEIGHT = 60
     TRACK_SPACING = 4
     MIN_DURATION = 30  # secondes affichées au minimum
+    HANDLE_WIDTH = 6  # largeur (px) de la zone de saisie des bords d'un clip
+    MIN_CLIP_DURATION = 0.1  # durée minimale (s) d'un clip après trim
+    KEYFRAME_COUNT = 20  # nombre de vignettes extraites par média
 
     def __init__(self, timeline_model, parent=None):
         super().__init__(parent)
@@ -30,7 +36,12 @@ class TimelineWidget(QWidget):
         self.selected_clip = None
         self._drag_clip = None
         self._drag_offset = 0  # secondes entre le début du clip et le point saisi
+        self._trim_clip = None
+        self._trim_edge = None  # "left" ou "right"
+        self._keyframes = {}  # chemin du média -> liste de QImage (vide si illisible ou pas encore prête)
+        self._keyframe_workers = []  # threads d'extraction en cours
         self.setMouseTracking(True)
+        self.timeline_model.changed.connect(self.refresh)
         self._update_size()
 
     # Redessine la timeline (slot prévu pour les futurs signaux du modèle)
@@ -90,19 +101,78 @@ class TimelineWidget(QWidget):
             self.clip_selected.emit(clip)
             self.update()
 
+    # Retourne "left" ou "right" si le point est sur un bord du clip, sinon None
+    def _edge_at(self, clip, point):
+        rect = self._clip_rect(self._track_index_of(clip), clip)
+        if point.x() <= rect.left() + self.HANDLE_WIDTH:
+            return "left"
+        if point.x() >= rect.right() - self.HANDLE_WIDTH:
+            return "right"
+        return None
+
+    def _track_index_of(self, clip):
+        for index, track in enumerate(self.timeline_model.get_project().get_tracks()):
+            if clip in track.get_clips():
+                return index
+        return None
+
+    def _cursor_at(self, point):
+        clip = self._clip_at(point)
+        if clip is None:
+            return Qt.ArrowCursor
+        return Qt.SizeHorCursor if self._edge_at(clip, point) else Qt.OpenHandCursor
+
     def mousePressEvent(self, event):
         if event.button() != Qt.LeftButton:
             return
         clip = self._clip_at(event.position())
         self.select_clip(clip)
-        if clip is not None:
-            self._drag_clip = clip
-            self._drag_offset = (event.position().x() - self._time_to_x(clip.get_position())) / self.pixels_per_second
-            self.setCursor(Qt.ClosedHandCursor)
+        if clip is None:
+            return
+        edge = self._edge_at(clip, event.position())
+        if edge is not None:
+            self._trim_clip = clip
+            self._trim_edge = edge
+            self.setCursor(Qt.SizeHorCursor)
+            return
+        self._drag_clip = clip
+        self._drag_offset = (event.position().x() - self._time_to_x(clip.get_position())) / self.pixels_per_second
+        self.setCursor(Qt.ClosedHandCursor)
+
+    # Déplace le bord saisi du clip à la position x (le clip reste dans les limites de sa source)
+    def _trim_to(self, x):
+        clip = self._trim_clip
+        time = (x - self.HEADER_WIDTH) / self.pixels_per_second
+        in_point, out_point = clip.get_in_point(), clip.get_out_point()
+
+        if self._trim_edge == "left":
+            # Le bord gauche suit la souris : l'in_point change du même décalage que la position.
+            delta = time - clip.get_position()
+            delta = max(-in_point, -clip.get_position(), min(delta, clip.get_duration() - self.MIN_CLIP_DURATION))
+            in_point = round(in_point + delta, 2)
+        else:
+            out_point = round(time - clip.get_position() + in_point, 2)
+            out_point = max(in_point + self.MIN_CLIP_DURATION, out_point)
+            source = clip.get_source()
+            if hasattr(source, "get_duration"):
+                out_point = min(out_point, source.get_duration())
+
+        if in_point == clip.get_in_point() and out_point == clip.get_out_point():
+            return
+        track = self.timeline_model.get_project().get_tracks()[self._track_index_of(clip)]
+        try:
+            self.timeline_model.trim_clip(track, clip, in_point, out_point)
+        except ValueError:
+            return  # trim refusé : le clip reste inchangé
+        self.clip_trimmed.emit(clip)
+        self.refresh()
 
     def mouseMoveEvent(self, event):
+        if self._trim_clip is not None:
+            self._trim_to(event.position().x())
+            return
         if self._drag_clip is None:
-            self.setCursor(Qt.OpenHandCursor if self._clip_at(event.position()) else Qt.ArrowCursor)
+            self.setCursor(self._cursor_at(event.position()))
             return
         time = (event.position().x() - self.HEADER_WIDTH) / self.pixels_per_second - self._drag_offset
         new_position = max(0, round(time, 2))
@@ -112,9 +182,11 @@ class TimelineWidget(QWidget):
             self.refresh()
 
     def mouseReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton and self._drag_clip is not None:
+        if event.button() == Qt.LeftButton and (self._drag_clip is not None or self._trim_clip is not None):
             self._drag_clip = None
-            self.setCursor(Qt.OpenHandCursor if self._clip_at(event.position()) else Qt.ArrowCursor)
+            self._trim_clip = None
+            self._trim_edge = None
+            self.setCursor(self._cursor_at(event.position()))
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -170,6 +242,7 @@ class TimelineWidget(QWidget):
                 else:
                     painter.setPen(QPen(QColor("#ffffff"), 1))
                 painter.drawRoundedRect(rect, 4, 4)
+                self._draw_thumbnails(painter, clip, rect)
                 painter.setPen(QColor("#ffffff"))
                 painter.setFont(self._font(8))
                 painter.drawText(
@@ -180,6 +253,55 @@ class TimelineWidget(QWidget):
                     ),
                 )
                 color_index += 1
+
+    # Vignettes de la source, extraites une seule fois par média dans un thread séparé.
+    # Retourne une liste vide tant qu'elles ne sont pas prêtes (ou si la source est illisible).
+    def _get_keyframes(self, media):
+        path = media.get_file_path()
+        if path not in self._keyframes:
+            self._keyframes[path] = []
+            worker = KeyframeWorker(path, self.KEYFRAME_COUNT, self.TRACK_HEIGHT - 6, self)
+            worker.keyframes_ready.connect(self._on_keyframes_ready)
+            worker.finished.connect(lambda: self._keyframe_workers.remove(worker))
+            self._keyframe_workers.append(worker)
+            worker.start()
+        return self._keyframes[path]
+
+    @Slot(str, list)
+    def _on_keyframes_ready(self, path, images):
+        self._keyframes[path] = images
+        self.update()
+
+    # Attend la fin des extractions en cours (à appeler avant de fermer l'application)
+    def stop_workers(self):
+        for worker in list(self._keyframe_workers):
+            worker.wait()
+
+    # Remplit le clip de vignettes : chacune montre l'image de la source au temps correspondant
+    def _draw_thumbnails(self, painter, clip, rect):
+        source = clip.get_source()
+        if source is None or not hasattr(source, "get_duration") or source.get_duration() <= 0:
+            return
+        keyframes = self._get_keyframes(source)
+        if not keyframes:
+            return
+
+        tile_width = max(keyframes[0].width(), 1)
+        painter.save()
+        painter.setClipRect(rect)
+        x = rect.left()
+        while x < rect.right():
+            source_time = clip.get_in_point() + (x + tile_width / 2 - rect.left()) / self.pixels_per_second
+            ratio = min(max(source_time / source.get_duration(), 0), 0.999)
+            image = keyframes[int(ratio * len(keyframes))]
+            painter.drawImage(QRectF(x, rect.top(), tile_width, rect.height()), image)
+            x += tile_width
+        painter.restore()
+
+        # Le cadre est redessiné par-dessus les vignettes qui masquent le contour du clip
+        painter.setBrush(Qt.NoBrush)
+        painter.setPen(QPen(QColor("#ffd400"), 3) if clip is self.selected_clip else QPen(QColor("#ffffff"), 1))
+        painter.drawRoundedRect(rect, 4, 4)
 
     @staticmethod
     def _clip_label(clip):

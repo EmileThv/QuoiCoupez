@@ -18,6 +18,11 @@ Fichiers attendus :
     video/exporter.py), avec émission régulière d'un signal de
     progression consommé par l'UI (barre de progression).
 
+- keyframe_worker.py
+    QThread qui extrait les vignettes d'une vidéo (video/thumbnail.py)
+    pour les afficher sur les clips de la timeline, sans figer l'UI
+    pendant les quelques secondes que prend la lecture.
+
 Règle générale : ces classes font le pont entre le traitement lourd
 (video/, effects/) et l'UI (ui/) via des signaux Qt (Signal/Slot) ; elles
 ne doivent pas contenir de logique métier complexe, seulement
