@@ -5,54 +5,42 @@ import re
 import cv2
 import numpy as np
 
-# BlurEffect : gaussian blur. params: {"intensity": int >= 0} (0 = no blur)
-class BlurEffect:
+from effects.base_effect import Effect
+
+# BlurEffect: gaussian blur (0 = no blur).
+class BlurEffect(Effect):
+    NAME = "Flou"
+    PARAMS = {
+        "intensity": {"type": int, "default": 5, "min": 0, "max": 50, "label": "Intensité"},
+    }
+
     def apply(self, frame, params=None):
-        if frame is None:
-            raise ValueError("blur_effect.apply: frame cannot be None")
-        if not isinstance(frame, np.ndarray):
-            raise TypeError("blur_effect.apply: frame must be a numpy array")
-
-        params = params or {}
-        intensity = params.get("intensity", 5)
-
-        if not isinstance(intensity, int):
-            raise TypeError("blur_effect.apply: intensity must be of type int")
-        if intensity < 0:
-            raise ValueError("blur_effect.apply: intensity must be >= 0")
-
+        self.check_frame(frame)
+        params = self.resolve_params(params)
+        intensity = params["intensity"]
         if intensity == 0:
             return frame.copy()
 
         kernel_size = 2 * intensity + 1
         return cv2.GaussianBlur(frame, (kernel_size, kernel_size), 0)
 
-# ColorCorrectionEffect : brightness and contrast.
-# params: {"brightness": number (-255..255, default 0),
-#          "contrast": number (>= 0, default 1.0, 1.0 = unchanged)}
-class ColorCorrectionEffect:
+
+# ColorCorrectionEffect: brightness and contrast (contrast 1.0 and brightness 0 = unchanged).
+class ColorCorrectionEffect(Effect):
+    NAME = "Luminosité / contraste"
+    PARAMS = {
+        "brightness": {"type": float, "default": 0.0, "min": -255.0, "max": 255.0, "label": "Luminosité"},
+        "contrast": {"type": float, "default": 1.0, "min": 0.0, "max": 3.0, "label": "Contraste"},
+    }
+
     def apply(self, frame, params=None):
-        if frame is None:
-            raise ValueError("color_correction_effect.apply: frame cannot be None")
-        if not isinstance(frame, np.ndarray):
-            raise TypeError("color_correction_effect.apply: frame must be a numpy array")
-
-        params = params or {}
-        brightness = params.get("brightness", 0)
-        contrast = params.get("contrast", 1.0)
-
-        if not isinstance(brightness, (int, float)):
-            raise TypeError("color_correction_effect.apply: brightness must be a number")
-        if not isinstance(contrast, (int, float)):
-            raise TypeError("color_correction_effect.apply: contrast must be a number")
-        if contrast < 0:
-            raise ValueError("color_correction_effect.apply: contrast must be >= 0")
-
-        return cv2.convertScaleAbs(frame, alpha=contrast, beta=brightness)
+        self.check_frame(frame)
+        params = self.resolve_params(params)
+        return cv2.convertScaleAbs(frame, alpha=params["contrast"], beta=params["brightness"])
 
 
 # TextOverlayEffect: writes a text on the frame.
-class TextOverlayEffect:
+class TextOverlayEffect(Effect):
     NAME = "Texte"
     # Positions and sizes are fractions of the frame size, for example x = 0.5 is the middle.
     PARAMS = {
@@ -60,13 +48,14 @@ class TextOverlayEffect:
         "x": {"type": float, "default": 0.05, "min": 0.0, "max": 1.0, "label": "Position X"},
         "y": {"type": float, "default": 0.05, "min": 0.0, "max": 1.0, "label": "Position Y"},
         "size": {"type": float, "default": 0.08, "min": 0.01, "max": 1.0, "label": "Taille"},
-        "color": {"type": str, "default": "#FFFFFF", "label": "Couleur (#RRGGBB)"},
+        "color": {"type": str, "default": "#FFFFFF", "label": "Couleur (#RRGGBB)", "kind": "color",
+                  "pattern": r"#[0-9a-fA-F]{6}", "pattern_hint": "#RRGGBB"},
         "opacity": {"type": float, "default": 1.0, "min": 0.0, "max": 1.0, "label": "Opacité"},
     }
 
     def apply(self, frame, params=None):
-        _check_frame("text_overlay_effect", frame)
-        params = _resolve_params("text_overlay_effect", self.PARAMS, params)
+        self.check_frame(frame)
+        params = self.resolve_params(params)
         color = _hex_to_bgr("text_overlay_effect", params["color"])
         if params["text"] == "":
             return frame.copy()
@@ -86,11 +75,11 @@ class TextOverlayEffect:
 
 
 # ImageOverlayEffect: draws an image or a logo on the frame and keeps its transparency.
-class ImageOverlayEffect:
+class ImageOverlayEffect(Effect):
     NAME = "Image / logo"
     # Positions and width are fractions of the frame size, and the height follows the image's shape.
     PARAMS = {
-        "image_path": {"type": str, "default": "", "label": "Fichier image"},
+        "image_path": {"type": str, "default": "", "label": "Fichier image", "kind": "file"},
         "x": {"type": float, "default": 0.8, "min": 0.0, "max": 1.0, "label": "Position X"},
         "y": {"type": float, "default": 0.05, "min": 0.0, "max": 1.0, "label": "Position Y"},
         "width": {"type": float, "default": 0.15, "min": 0.01, "max": 1.0, "label": "Largeur"},
@@ -98,8 +87,8 @@ class ImageOverlayEffect:
     }
 
     def apply(self, frame, params=None):
-        _check_frame("image_overlay_effect", frame)
-        params = _resolve_params("image_overlay_effect", self.PARAMS, params)
+        self.check_frame(frame)
+        params = self.resolve_params(params)
         if params["image_path"] == "":
             return frame.copy()
 
@@ -120,51 +109,8 @@ class ImageOverlayEffect:
         return _blend(frame, colors, alpha, x, y)
 
 
-def _check_frame(effect_name, frame):
-    if frame is None:
-        raise ValueError(f"{effect_name}.apply: frame cannot be None")
-    if not isinstance(frame, np.ndarray):
-        raise TypeError(f"{effect_name}.apply: frame must be a numpy array")
-    if frame.ndim != 3 or frame.shape[2] != 3:
-        raise ValueError(f"{effect_name}.apply: frame must be a color image of shape (h, w, 3)")
-    if frame.dtype != np.uint8:
-        raise ValueError(f"{effect_name}.apply: frame must contain uint8 values")
-
-
-# Checks the given values and fills in the missing ones with their default value.
-# To be replaced by Effect.resolve_params when base_effect.py is on main.
-def _resolve_params(effect_name, specs, params):
-    if params is None:
-        params = {}
-    if not isinstance(params, dict):
-        raise TypeError(f"{effect_name}.apply: params must be of type dict")
-
-    resolved = {}
-    for name in specs:
-        resolved[name] = specs[name]["default"]
-
-    for name, value in params.items():
-        if name not in specs:
-            raise ValueError(f"{effect_name}.apply: unknown parameter '{name}'")
-        _check_param(effect_name, name, value, specs[name])
-        resolved[name] = value
-    return resolved
-
-
-def _check_param(effect_name, name, value, spec):
-    expected_type = spec["type"]
-    # An int is also accepted where a float is expected, for example 1 instead of 1.0.
-    if expected_type is float:
-        is_right_type = isinstance(value, (int, float))
-    else:
-        is_right_type = isinstance(value, expected_type)
-    if not is_right_type:
-        raise TypeError(f"{effect_name}.apply: {name} must be of type {expected_type.__name__}")
-
-    if "min" in spec and value < spec["min"]:
-        raise ValueError(f"{effect_name}.apply: {name} must be at least {spec['min']}")
-    if "max" in spec and value > spec["max"]:
-        raise ValueError(f"{effect_name}.apply: {name} must be at most {spec['max']}")
+# Video effects offered in the effects panel, in display order.
+VIDEO_EFFECTS = [BlurEffect, ColorCorrectionEffect, TextOverlayEffect, ImageOverlayEffect]
 
 
 # Converts a color like "#FF8800" to the (blue, green, red) order used by OpenCV.
