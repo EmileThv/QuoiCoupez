@@ -11,8 +11,9 @@ CLIP_COLORS = ["#4f8ef7", "#f7a14f", "#6cc070", "#c76cf0", "#f06c8a"]
 class TimelineWidget(QWidget):
     """Timeline : règle de temps, pistes et clips dessinés via paintEvent.
 
-    Souris : clic gauche sélectionne un clip, glisser le déplace dans le temps sur sa piste,
-    glisser l'un de ses bords le raccourcit (trim). Chaque clip affiche des vignettes de sa source.
+    Souris : clic gauche sélectionne un clip, glisser le déplace dans le temps et d'une piste à
+    l'autre, glisser l'un de ses bords le raccourcit (trim). Ctrl + molette zoome, Suppr supprime
+    le clip sélectionné. Chaque clip affiche des vignettes de sa source.
     """
 
     clip_selected = Signal(object)  # Clip sélectionné (None si la sélection est effacée)
@@ -41,6 +42,7 @@ class TimelineWidget(QWidget):
         self._keyframes = {}  # chemin du média -> liste de QImage (vide si illisible ou pas encore prête)
         self._keyframe_workers = []  # threads d'extraction en cours
         self.setMouseTracking(True)
+        self.setFocusPolicy(Qt.ClickFocus)  # nécessaire pour recevoir la touche Suppr
         self.timeline_model.changed.connect(self.refresh)
         self._update_size()
 
@@ -176,10 +178,36 @@ class TimelineWidget(QWidget):
             return
         time = (event.position().x() - self.HEADER_WIDTH) / self.pixels_per_second - self._drag_offset
         new_position = max(0, round(time, 2))
-        if new_position != self._drag_clip.get_position():
-            self._drag_clip.set_position(new_position)
+        tracks = self.timeline_model.get_project().get_tracks()
+        track = tracks[self._track_index_of(self._drag_clip)]
+        # Le clip change de piste quand la souris passe sur une autre piste (sinon il reste sur la sienne).
+        target_index = self._y_to_track_index(event.position().y())
+        target = tracks[target_index] if target_index is not None else track
+        if new_position != self._drag_clip.get_position() or target is not track:
+            # Passe par le modèle : la durée totale est recalculée et la timeline se redessine.
+            self.timeline_model.move_clip(track, self._drag_clip, new_position, target)
             self.clip_moved.emit(self._drag_clip)
-            self.refresh()
+
+    # Suppr / Retour arrière : supprime le clip sélectionné
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key_Delete, Qt.Key_Backspace) and self.selected_clip is not None:
+            clip = self.selected_clip
+            track_index = self._track_index_of(clip)
+            self.select_clip(None)
+            if track_index is not None:
+                track = self.timeline_model.get_project().get_tracks()[track_index]
+                self.timeline_model.remove_clip(track, clip)
+            return
+        super().keyPressEvent(event)
+
+    # Ctrl + molette : zoom avant / arrière (la molette seule fait défiler la timeline)
+    def wheelEvent(self, event):
+        if event.modifiers() & Qt.ControlModifier:
+            factor = 1.25 if event.angleDelta().y() > 0 else 0.8
+            self.set_pixels_per_second(min(max(self.pixels_per_second * factor, 2), 400))
+            event.accept()
+            return
+        super().wheelEvent(event)
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton and (self._drag_clip is not None or self._trim_clip is not None):
@@ -243,13 +271,16 @@ class TimelineWidget(QWidget):
                     painter.setPen(QPen(QColor("#ffffff"), 1))
                 painter.drawRoundedRect(rect, 4, 4)
                 self._draw_thumbnails(painter, clip, rect)
+                # Nom du clip dans un bandeau sombre, lisible quelle que soit la vignette dessous
+                label_rect = QRectF(rect.left() + 2, rect.bottom() - 17, max(rect.width() - 4, 0), 15)
+                painter.fillRect(label_rect, QColor(0, 0, 0, 150))
                 painter.setPen(QColor("#ffffff"))
                 painter.setFont(self._font(8))
                 painter.drawText(
-                    rect.adjusted(6, 0, -6, 0),
+                    label_rect.adjusted(4, 0, -4, 0),
                     Qt.AlignVCenter | Qt.AlignLeft,
                     painter.fontMetrics().elidedText(
-                        self._clip_label(clip), Qt.ElideRight, max(int(rect.width()) - 12, 0)
+                        self._clip_label(clip), Qt.ElideRight, max(int(label_rect.width()) - 8, 0)
                     ),
                 )
                 color_index += 1

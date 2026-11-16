@@ -4,14 +4,20 @@
 
 Inspiré d'outils comme CapCut, il permet de charger des vidéos, de les organiser sur une timeline multi-pistes, d'y appliquer des effets visuels et audio, de prévisualiser le montage en temps réel, puis d'exporter le résultat final.
 
-## Fonctionnalités visées
+## Fonctionnalités
 
-- Chargement de vidéos (FFmpeg / OpenCV)
-- Affichage d'une timeline multi-pistes (vidéo / audio)
-- Affichage des miniatures et images-clés (keyframes)
-- Ajout de pistes d'effets (vidéo et audio)
-- Lecture (playback) du montage avec effets appliqués en temps réel
-- Export de la vidéo finale
+- **Import de vidéos** (Fichier → Importer, `Ctrl+I`) : lecture des métadonnées avec OpenCV,
+  miniature dans la bibliothèque de médias.
+- **Timeline multi-pistes** : glisser-déposer depuis la bibliothèque, déplacement des clips dans
+  le temps et d'une piste à l'autre, découpe (trim) en tirant les bords d'un clip, suppression,
+  zoom. Chaque clip affiche des vignettes de sa source, extraites en arrière-plan.
+- **Aperçu en temps réel** dans un thread dédié : lecture, pause, stop, déplacement avec le slider.
+  Les effets vidéo du clip sélectionné sont appliqués pendant la lecture.
+- **Effets vidéo** : flou, luminosité / contraste, incrustation de texte, incrustation d'image ou
+  de logo (avec transparence).
+- **Effets audio** (Audiomentations) : volume (gain), écho, réduction de bruit (filtres).
+- **Export** (Fichier → Exporter, `Ctrl+E`) : vidéo MP4 (H.264 + AAC) avec FFmpeg, effets vidéo et
+  audio compris, barre de progression et annulation.
 
 ## Équipe
 
@@ -24,7 +30,8 @@ Projet développé par **Matthieu**, **Bastian**, **Élie** et **Émile**.
 - **OpenCV** (`opencv-python`) — lecture des frames, miniatures, traitement d'image
 - **FFmpeg** (via `ffmpeg-python`) — décodage/encodage et export vidéo
 - **Audiomentations** — effets audio
-- **PyFx** — effets visuels additionnels
+- **NumPy** — calcul sur les images et le son (effets, mixage audio)
+- **pytest** — tests unitaires
 
 ## Installation
 
@@ -51,22 +58,58 @@ L'export utilise le programme **FFmpeg**, qui doit être installé et accessible
 python main.py
 ```
 
+## Utilisation
+
+1. **Importer** une ou plusieurs vidéos : Fichier → Importer un média (`Ctrl+I`). Elles
+   apparaissent dans la bibliothèque, à gauche. Un double-clic affiche une vidéo dans l'aperçu.
+2. **Monter** : glisser une vidéo de la bibliothèque sur une piste de la timeline, puis :
+   - glisser un clip pour le déplacer (y compris vers l'autre piste) ;
+   - tirer son bord gauche ou droit pour le raccourcir ;
+   - `Suppr` pour supprimer le clip sélectionné, `Ctrl` + molette pour zoomer.
+3. **Ajouter des effets** : sélectionner un clip, choisir un effet dans le panneau de droite,
+   cliquer sur *Ajouter* puis régler ses paramètres. Les effets vidéo sont visibles tout de suite
+   dans l'aperçu ; les effets marqués `[Audio]` s'entendent dans la vidéo exportée.
+4. **Lire** : boutons lecture / pause / stop ou barre `Espace`.
+5. **Exporter** : Fichier → Exporter (`Ctrl+E`), choisir le fichier de sortie puis *Exporter*.
+
+Règles du montage exporté : quand deux clips se chevauchent, c'est celui de la piste du haut
+(*Piste 1*) qui est visible ; le son de tous les clips est mélangé. Une zone sans clip est noire.
+
+## Tests
+
+```bash
+python -m pytest            # toute la suite (les tests vidéo / export sont ignorés sans FFmpeg)
+python -m pytest --cov=core --cov=effects --cov=video   # avec la couverture (pytest-cov)
+```
+
+Les tests de `video/` et de l'export génèrent eux-mêmes de petites vidéos avec FFmpeg. Les scripts
+`tests/manual_*.py` et `tests/Elie_Tests_week*.py` sont des vérifications manuelles (à lancer avec
+`python -m tests.manual_decoder_check`, par exemple, depuis la racine du projet).
+
+## Limites connues
+
+- L'aperçu lit la source du clip sélectionné, pas le montage complet de la timeline ; il ne joue
+  pas le son (les effets audio ne s'entendent que dans l'export).
+- Pas de transparence entre pistes : seul le clip de la piste du dessus est visible.
+- Le projet n'est pas encore enregistrable (pas de sauvegarde / ouverture de projet).
+
 ## Structure du projet
 
 ```
-video_editor/
+PROJET_QUOICOUPEZ/
 │
-├── main.py                # Point d'entrée : lance QApplication et la fenêtre principale
-├── requirements.txt        # Dépendances (PySide6, opencv-python, ffmpeg-python, audiomentations...)
+├── main.py                 # Point d'entrée : style, icône, fenêtre principale
+├── requirements.txt        # Dépendances Python
 │
-├── ui/                     # Interface graphique (widgets Qt)
-├── core/                   # Logique métier (Project, Clip, Track, TimelineModel)
-├── video/                  # Traitement vidéo bas niveau (decoder, exporter, thumbnails)
-├── effects/                # Effets vidéo et audio
-├── workers/                # Threads Qt (lecture, export)
-├── resources/               # Icônes, styles QSS
-├── assets/                  # Médias de test / démonstration
-└── tests/                   # Tests unitaires (core/ et effects/)
+├── ui/                     # Interface graphique : fenêtre, timeline, aperçu, bibliothèque,
+│                           # panneau d'effets, contrôles, boîte d'export, icônes
+├── core/                   # Logique métier (Project, Media, Clip, Track, TimelineModel)
+├── video/                  # Décodeur, miniatures / vignettes, exporter (FFmpeg)
+├── effects/                # Classe Effect + effets vidéo et audio
+├── workers/                # Threads Qt (lecture, export, vignettes)
+├── resources/              # Feuille de style style.qss et icônes SVG
+├── assets/                 # Médias de test / démonstration
+└── tests/                  # Tests unitaires (pytest) et scripts de vérification manuelle
 ```
 
 Chaque répertoire contient un fichier `info.txt` détaillant précisément son contenu et son rôle.

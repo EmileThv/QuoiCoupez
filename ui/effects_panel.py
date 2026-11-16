@@ -9,6 +9,7 @@ from core.clip import Clip
 from effects.audio_effects import AUDIO_EFFECTS
 from effects.base_effect import Effect
 from effects.video_effects import VIDEO_EFFECTS
+from ui.icons import load_icon
 
 ERROR_STYLE = "border: 1px solid #e05050;"
 
@@ -37,13 +38,15 @@ class EffectsPanel(QWidget):
         self.available_effects = available_effects
         self.clip = None
 
+        panel_title = QLabel("Effets")
+        panel_title.setObjectName("panelTitle")
         self.title = QLabel()
         self.title.setWordWrap(True)
 
         self.effect_choice = QComboBox()
         for effect_class in available_effects:
             self.effect_choice.addItem(_display_name(effect_class), effect_class)
-        self.add_button = QPushButton("Ajouter")
+        self.add_button = QPushButton(load_icon("add"), "Ajouter")
         self.add_button.clicked.connect(self._add_effect)
         add_row = QHBoxLayout()
         add_row.addWidget(self.effect_choice, 1)
@@ -51,7 +54,7 @@ class EffectsPanel(QWidget):
 
         self.effect_list = QListWidget()
         self.effect_list.currentRowChanged.connect(self._show_params)
-        self.remove_button = QPushButton("Retirer")
+        self.remove_button = QPushButton(load_icon("remove"), "Retirer")
         self.remove_button.clicked.connect(self._remove_effect)
 
         self.params_title = QLabel()
@@ -60,6 +63,7 @@ class EffectsPanel(QWidget):
         self.params_layout.setContentsMargins(0, 0, 0, 0)
 
         layout = QVBoxLayout(self)
+        layout.addWidget(panel_title)
         layout.addWidget(self.title)
         layout.addLayout(add_row)
         layout.addWidget(QLabel("Effets du clip (appliqués dans l'ordre) :"))

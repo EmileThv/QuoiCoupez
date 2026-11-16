@@ -1,0 +1,168 @@
+/* QuoiCoupez - thème sombre.
+   Les couleurs reprennent celles de la timeline (ui/timeline_widget.py) :
+   fond #1e1e1e / #2b2b2b, panneaux #363636, accent bleu #4f8ef7, sélection jaune #ffd400. */
+
+QWidget {
+    background-color: #2b2b2b;
+    color: #e6e6e6;
+    font-size: 10pt;
+}
+
+QMainWindow, QDialog {
+    background-color: #1e1e1e;
+}
+
+QToolTip {
+    background-color: #363636;
+    color: #e6e6e6;
+    border: 1px solid #4f8ef7;
+    padding: 4px;
+}
+
+/* Menus et barre d'état */
+QMenuBar {
+    background-color: #1e1e1e;
+}
+QMenuBar::item {
+    padding: 4px 10px;
+    background: transparent;
+}
+QMenuBar::item:selected, QMenu::item:selected {
+    background-color: #4f8ef7;
+    color: #ffffff;
+}
+QMenu {
+    background-color: #2b2b2b;
+    border: 1px solid #444444;
+}
+QMenu::item {
+    padding: 5px 24px 5px 24px;
+}
+QStatusBar {
+    background-color: #1e1e1e;
+    color: #bbbbbb;
+}
+
+/* Boutons */
+QPushButton {
+    background-color: #3a3a3a;
+    border: 1px solid #4a4a4a;
+    border-radius: 4px;
+    padding: 5px 12px;
+}
+QPushButton:hover {
+    background-color: #454545;
+    border-color: #4f8ef7;
+}
+QPushButton:pressed {
+    background-color: #4f8ef7;
+}
+QPushButton:disabled {
+    color: #6e6e6e;
+    background-color: #303030;
+    border-color: #383838;
+}
+
+/* Champs de saisie */
+QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
+    background-color: #1e1e1e;
+    border: 1px solid #4a4a4a;
+    border-radius: 3px;
+    padding: 3px 5px;
+    selection-background-color: #4f8ef7;
+}
+QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {
+    border-color: #4f8ef7;
+}
+QLineEdit:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled, QComboBox:disabled {
+    color: #6e6e6e;
+}
+QComboBox QAbstractItemView {
+    background-color: #2b2b2b;
+    selection-background-color: #4f8ef7;
+}
+
+/* Listes (bibliothèque de médias, effets du clip) */
+QListWidget {
+    background-color: #232323;
+    border: 1px solid #3a3a3a;
+    border-radius: 4px;
+}
+QListWidget::item {
+    padding: 4px;
+    border-radius: 3px;
+}
+QListWidget::item:hover {
+    background-color: #363636;
+}
+QListWidget::item:selected {
+    background-color: #4f8ef7;
+    color: #ffffff;
+}
+
+/* Slider de lecture */
+QSlider::groove:horizontal {
+    height: 6px;
+    background: #1e1e1e;
+    border-radius: 3px;
+}
+QSlider::sub-page:horizontal {
+    background: #4f8ef7;
+    border-radius: 3px;
+}
+QSlider::handle:horizontal {
+    width: 14px;
+    margin: -5px 0;
+    background: #ffd400;
+    border-radius: 7px;
+}
+QSlider::handle:horizontal:disabled {
+    background: #6e6e6e;
+}
+
+/* Barre de progression de l'export */
+QProgressBar {
+    background-color: #1e1e1e;
+    border: 1px solid #4a4a4a;
+    border-radius: 4px;
+    text-align: center;
+    height: 18px;
+}
+QProgressBar::chunk {
+    background-color: #4f8ef7;
+    border-radius: 3px;
+}
+
+/* Barres de défilement (timeline) */
+QScrollArea {
+    border: 1px solid #3a3a3a;
+}
+QScrollBar:horizontal, QScrollBar:vertical {
+    background: #1e1e1e;
+    border: none;
+    margin: 0;
+}
+QScrollBar:horizontal { height: 12px; }
+QScrollBar:vertical { width: 12px; }
+QScrollBar::handle:horizontal, QScrollBar::handle:vertical {
+    background: #4a4a4a;
+    border-radius: 5px;
+    min-width: 30px;
+    min-height: 30px;
+    margin: 2px;
+}
+QScrollBar::handle:hover {
+    background: #5a5a5a;
+}
+QScrollBar::add-line, QScrollBar::sub-line {
+    width: 0;
+    height: 0;
+}
+
+/* Titres des panneaux */
+QLabel#panelTitle {
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 11pt;
+    padding: 2px 0;
+}
