@@ -216,7 +216,8 @@ class PlaybackWorker(QThread):
     # Applies the effects to an RGB frame (from VideoDecoder) and converts it to a QImage
     def _process(self, frame):
         self._mutex.lock()
-        effects = list(self._effects)
+        # Audio effects are not played in the preview: they are applied when exporting.
+        effects = [effect for effect in self._effects if effect.KIND == "video"]
         self._mutex.unlock()
         if not effects:
             return self._to_qimage(frame, QImage.Format_RGB888)

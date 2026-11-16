@@ -42,6 +42,9 @@ venv\Scripts\activate        # Windows
 pip install -r requirements.txt
 ```
 
+L'export utilise le programme **FFmpeg**, qui doit être installé et accessible dans le `PATH`
+(`ffmpeg -version` doit fonctionner). Sous Windows : `winget install Gyan.FFmpeg`.
+
 ## Lancer l'application
 
 ```bash

@@ -2,7 +2,6 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import tempfile
-import time
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QKeySequence
@@ -21,6 +20,7 @@ from ui.media_library import MediaLibraryWidget
 from ui.preview_widget import PreviewWidget
 from ui.timeline_widget import TimelineWidget
 from video.decoder import get_video_metadata
+from video.exporter import VideoExporter
 from video.thumbnail import generate_thumbnail
 from workers.playback_worker import PlaybackWorker
 
@@ -79,13 +79,16 @@ class MainWindow(QMainWindow):
     def open_export_dialog(self):
         ExportDialog(self._make_export, self).exec()
 
-    # Temporary: pretends to export without writing any file, until video/exporter.py exists.
+    # Prépare l'export du montage (copie du projet faite ici, dans le thread de l'interface)
     def _make_export(self, output_path):
-        def simulated_export(on_progress):
-            for percent in range(101):
-                time.sleep(0.03)
-                on_progress(percent)
-        return simulated_export
+        try:
+            exporter = VideoExporter(self.timeline_model.get_project(), output_path)
+        except ValueError as error:
+            # Timeline vide... : l'erreur est affichée par la boîte de dialogue comme un échec d'export.
+            def failed_export(on_progress, message=str(error)):
+                raise ValueError(message)
+            return failed_export
+        return exporter.export
 
     # Projet vide avec deux pistes : les clips viennent du glisser-déposer depuis la bibliothèque.
     def _build_project(self):

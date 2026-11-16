@@ -18,6 +18,7 @@ import numpy as np
 # in a clip and applied on each frame during playback with apply(frame).
 class Effect(ABC):
     NAME = "Effet"
+    KIND = "video"  # "video": applied to the frames, "audio": applied to the sound (AudioEffect)
     PARAMS = {}
 
     def __init__(self, params=None):

@@ -6,10 +6,17 @@ from PySide6.QtWidgets import (
 )
 
 from core.clip import Clip
+from effects.audio_effects import AUDIO_EFFECTS
 from effects.base_effect import Effect
 from effects.video_effects import VIDEO_EFFECTS
 
 ERROR_STYLE = "border: 1px solid #e05050;"
+
+
+# "Écho" -> "[Audio] Écho": audio effects are only heard in the exported video, not in the preview.
+def _display_name(effect):
+    prefix = "[Audio] " if effect.KIND == "audio" else ""
+    return prefix + effect.NAME
 
 
 # EffectsPanel: lists the available effects, the effects of the selected clip, and the
@@ -21,7 +28,7 @@ class EffectsPanel(QWidget):
     def __init__(self, available_effects=None, parent=None):
         super().__init__(parent)
         if available_effects is None:
-            available_effects = VIDEO_EFFECTS
+            available_effects = VIDEO_EFFECTS + AUDIO_EFFECTS
         if not isinstance(available_effects, list):
             raise TypeError("effects_panel.__init__: available_effects must be a list")
         for effect_class in available_effects:
@@ -35,7 +42,7 @@ class EffectsPanel(QWidget):
 
         self.effect_choice = QComboBox()
         for effect_class in available_effects:
-            self.effect_choice.addItem(effect_class.NAME, effect_class)
+            self.effect_choice.addItem(_display_name(effect_class), effect_class)
         self.add_button = QPushButton("Ajouter")
         self.add_button.clicked.connect(self._add_effect)
         add_row = QHBoxLayout()
@@ -87,7 +94,7 @@ class EffectsPanel(QWidget):
         self.effect_list.clear()
         if self.clip is not None:
             for effect in self.clip.get_effects():
-                item = QListWidgetItem(effect.get_name())
+                item = QListWidgetItem(_display_name(effect))
                 item.setData(Qt.UserRole, effect)
                 self.effect_list.addItem(item)
         self.effect_list.blockSignals(False)

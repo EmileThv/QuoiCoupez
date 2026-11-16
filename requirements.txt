@@ -1,3 +1,6 @@
 PySide6
 opencv-python
+numpy
+ffmpeg-python
+audiomentations
 pytest
